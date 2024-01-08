@@ -1,0 +1,295 @@
+// Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
+
+#include "systems_visibility_sort_filter_model.h"
+
+#include <QtCore/QCollator>
+
+#include <nx/utils/log/assert.h>
+#include <nx/utils/scoped_connections.h>
+#include <ui/models/systems_model.h>
+
+using namespace nx::vms::client::core;
+
+namespace nx::vms::client::desktop {
+
+namespace {
+
+bool isLocalHost(const QModelIndex& index)
+{
+    // TODO: #dfisenko Provide this information using special role.
+    return index.data(QnSystemsModel::SearchRoleId).toString().contains("localhost");
+}
+
+} // namespace
+
+struct SystemsVisibilitySortFilterModel::Private
+{
+    nx::utils::ScopedConnections sourceModelConnections;
+    QCollator collator;
+
+    VisibilityScopeGetter visibilityScopeFilterGetter =
+        []()
+        {
+            NX_ASSERT(false, "visibilityScopeGetter is not initialized yet");
+            return Filter::AllSystemsTileScopeFilter;
+        };
+    VisibilityScopeSetter visibilityScopeFilterSetter =
+        [](Filter /*filter*/)
+        {
+            NX_ASSERT(false, "visibilityScopeSetter is not initialized yet");
+        };
+    ForgottenCheckFunction systemIsForgotten =
+        [](const QString& /*systemId*/)
+        {
+            NX_ASSERT(false, "systemIsForgotten is not initialized yet");
+            return false;
+        };
+};
+
+SystemsVisibilitySortFilterModel::SystemsVisibilitySortFilterModel(QObject* parent):
+    base_type(parent),
+    d(new Private)
+{
+    d->collator.setCaseSensitivity(Qt::CaseInsensitive);
+    d->collator.setNumericMode(true);
+    setDynamicSortFilter(true);
+}
+
+SystemsVisibilitySortFilterModel::~SystemsVisibilitySortFilterModel()
+{
+}
+
+void SystemsVisibilitySortFilterModel::setSourceModel(QAbstractItemModel* sourceModel)
+{
+    d->sourceModelConnections = {};
+
+    base_type::setSourceModel(sourceModel);
+
+    if (!sourceModel)
+        return;
+
+    setFilterCaseSensitivity(Qt::CaseInsensitive);
+    setFilterRole(QnSystemsModel::SearchRoleId);
+
+    d->sourceModelConnections <<
+        QObject::connect(sourceModel, &QAbstractItemModel::dataChanged,
+            [this](
+                const QModelIndex& /*topLeft*/,
+                const QModelIndex& /*bottomRight*/,
+                const QVector<int>& roles)
+            {
+                static const QSet<int> kSortRoles = {
+                    QnSystemsModel::IsFactorySystemRoleId,
+                    QnSystemsModel::VisibilityScopeRoleId,
+                    QnSystemsModel::IsCloudSystemRoleId,
+                    QnSystemsModel::IsOnlineRoleId,
+                    QnSystemsModel::SearchRoleId,
+                    QnSystemsModel::SystemNameRoleId,
+                    QnSystemsModel::IsCompatibleToDesktopClient
+                };
+
+                if (kSortRoles.contains(QSet<int>(roles.begin(), roles.begin())))
+                    sort(0);
+            });
+    sort(0);
+
+    d->sourceModelConnections << connect(sourceModel, &QnSystemsModel::rowsRemoved,
+        this, &SystemsVisibilitySortFilterModel::totalSystemsCountChanged);
+
+    d->sourceModelConnections << connect(sourceModel, &QnSystemsModel::rowsInserted,
+        this, &SystemsVisibilitySortFilterModel::totalSystemsCountChanged);
+}
+
+void SystemsVisibilitySortFilterModel::setVisibilityScopeFilterCallbacks(
+    SystemsVisibilitySortFilterModel::VisibilityScopeGetter getter,
+    SystemsVisibilitySortFilterModel::VisibilityScopeSetter setter)
+{
+    qDebug() << __func__ << "START";
+    d->visibilityScopeFilterGetter = getter;
+    d->visibilityScopeFilterSetter = setter;
+    qDebug() << __func__ << "END";
+}
+
+void SystemsVisibilitySortFilterModel::setForgottenCheckCallback(
+    SystemsVisibilitySortFilterModel::ForgottenCheckFunction callback)
+{
+    d->systemIsForgotten = callback;
+}
+
+void SystemsVisibilitySortFilterModel::forgottenSystemAdded(const QString& systemId)
+{
+    qDebug() << __func__ << "Start";
+    if (!sourceModel())
+        return;
+
+    for (int row = 0; row < sourceModel()->rowCount(); ++row)
+    {
+        const auto index = sourceModel()->index(row, 0);
+        if (systemId == sourceModel()->data(index, QnSystemsModel::SystemIdRoleId))
+        {
+            invalidateFilter();
+            emit totalSystemsCountChanged();
+            return;
+        }
+    }
+    qDebug() << __func__ << "end";
+}
+
+void SystemsVisibilitySortFilterModel::forgottenSystemRemoved(const QString& systemId)
+{
+    qDebug() << __func__ << "START";
+    if (!sourceModel())
+        return;
+
+    for (int row = 0; row < sourceModel()->rowCount(); ++row)
+    {
+        const auto index = sourceModel()->index(row, 0);
+        if (systemId == sourceModel()->data(index, QnSystemsModel::SystemIdRoleId))
+        {
+            invalidateFilter();
+            emit totalSystemsCountChanged();
+            return;
+        }
+    }
+    qDebug() << __func__ << "END";
+}
+
+SystemsVisibilitySortFilterModel::Filter SystemsVisibilitySortFilterModel::visibilityFilter() const
+{
+    return d->visibilityScopeFilterGetter();
+}
+
+void SystemsVisibilitySortFilterModel::setVisibilityFilter(
+    SystemsVisibilitySortFilterModel::Filter filter)
+{
+    if (visibilityFilter() == filter)
+        return;
+
+    d->visibilityScopeFilterSetter(filter);
+
+    emit visibilityFilterChanged();
+    invalidateFilter();
+}
+
+int SystemsVisibilitySortFilterModel::totalSystemsCount() const
+{
+    return sourceModel()->rowCount() - forgottenSystemsCount(0, sourceModel()->rowCount() - 1);
+}
+
+bool SystemsVisibilitySortFilterModel::filterAcceptsRow(
+    int sourceRow,
+    const QModelIndex& /*sourceParent*/) const
+{
+    if (!sourceModel())
+        return true;
+
+    const auto sourceIndex = sourceModel()->index(sourceRow, 0);
+
+    if (!sourceIndex.isValid())
+        return true;
+
+    if (d->systemIsForgotten(sourceIndex.data(QnSystemsModel::SystemIdRoleId).toString()))
+        return false;
+
+    if (filterRegExp().pattern().isEmpty())
+        return !isHidden(sourceIndex);
+
+    const auto fieldData = sourceModel()->index(sourceRow, 0).data(filterRole()).toString();
+    return fieldData.contains(filterRegExp().pattern(), filterCaseSensitivity());
+}
+
+bool SystemsVisibilitySortFilterModel::lessThan(
+    const QModelIndex& sourceLeft,
+    const QModelIndex& sourceRight) const
+{
+    const auto leftIsFactorySystem = sourceLeft.data(QnSystemsModel::IsFactorySystemRoleId);
+    const auto rightIsFactorySystem = sourceRight.data(QnSystemsModel::IsFactorySystemRoleId);
+
+    const auto leftVisibilityScope = sourceLeft.data(QnSystemsModel::VisibilityScopeRoleId);
+    const auto rightVisibilityScope = sourceRight.data(QnSystemsModel::VisibilityScopeRoleId);
+
+    if (leftIsFactorySystem != rightIsFactorySystem)
+    {
+        if (leftVisibilityScope == rightVisibilityScope)
+            return leftIsFactorySystem.toBool();
+
+        return leftIsFactorySystem.toBool()
+            ? leftVisibilityScope.toInt() != welcome_screen::HiddenTileVisibilityScope
+            : rightVisibilityScope.toInt() == welcome_screen::HiddenTileVisibilityScope;
+    }
+
+    if (leftVisibilityScope != rightVisibilityScope)
+        return leftVisibilityScope > rightVisibilityScope;
+
+    if (sourceLeft.data(QnSystemsModel::IsCloudSystemRoleId)
+        != sourceRight.data(QnSystemsModel::IsCloudSystemRoleId))
+    {
+        return sourceLeft.data(QnSystemsModel::IsCloudSystemRoleId).toBool();
+    }
+
+    const bool leftIsConnectable = sourceLeft.data(QnSystemsModel::IsOnlineRoleId).toBool() &&
+        sourceLeft.data(QnSystemsModel::IsCompatibleToDesktopClient).toBool();
+    const bool rightIsConnectable = sourceRight.data(QnSystemsModel::IsOnlineRoleId).toBool() &&
+        sourceRight.data(QnSystemsModel::IsCompatibleToDesktopClient).toBool();
+
+    if (leftIsConnectable != rightIsConnectable)
+        return leftIsConnectable;
+
+    const bool leftIsLocalhost = isLocalHost(sourceLeft);
+    const bool rightIsLocalhost = isLocalHost(sourceRight);
+
+    if (leftIsLocalhost != rightIsLocalhost)
+        return leftIsLocalhost;
+
+    const int namesOrder = d->collator.compare(
+        sourceLeft.data(QnSystemsModel::SystemNameRoleId).toString(),
+        sourceRight.data(QnSystemsModel::SystemNameRoleId).toString());
+
+    if (namesOrder != 0)
+        return namesOrder < 0;
+
+    return sourceLeft.data(QnSystemsModel::SystemIdRoleId)
+        < sourceRight.data(QnSystemsModel::SystemIdRoleId);
+}
+
+bool SystemsVisibilitySortFilterModel::isHidden(const QModelIndex& sourceIndex) const
+{
+    const auto visibilityScope = static_cast<welcome_screen::TileVisibilityScope>(
+        sourceIndex.data(QnSystemsModel::VisibilityScopeRoleId).toInt());
+
+    switch (visibilityFilter())
+    {
+        // When filter is set to 'Favorites', hide all which are not favorite.
+        case welcome_screen::FavoritesTileScopeFilter:
+            return visibilityScope != welcome_screen::FavoriteTileVisibilityScope;
+
+        // When filter is set to 'Hidden', hide all which are not hidden.
+        case welcome_screen::HiddenTileScopeFilter:
+            return visibilityScope != welcome_screen::HiddenTileVisibilityScope;
+
+        // Show all except hidden.
+        default:
+            return visibilityScope == welcome_screen::HiddenTileVisibilityScope;
+    }
+}
+
+int SystemsVisibilitySortFilterModel::forgottenSystemsCount(int firstRow, int lastRow) const
+{
+    int result = 0;
+
+    if (!sourceModel())
+        return result;
+
+    for (int row = firstRow; row <= lastRow; ++row)
+    {
+        auto sourceIndex = sourceModel()->index(row, 0);
+        if (d->systemIsForgotten(sourceIndex.data(QnSystemsModel::SystemIdRoleId).toString()))
+        {
+            ++result;
+        }
+    }
+
+    return result;
+}
+
+} // namespace nx::vms::client::desktop

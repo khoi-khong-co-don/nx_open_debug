@@ -1,0 +1,60 @@
+{
+    "id": "metavms",
+    "brand": "metavms",
+    "companyName": "Oryza Systems",
+    "companyId": "networkoptix-metavms",
+    "vmsName": "Nx Meta",
+    "vmsId": "Nx MetaVMS",
+    "skin": "gray_white",
+    "uriProtocol": "nx-metavms",
+    "eulaVersion": 1,
+    "installerName": "metavms",
+    "cloudName": "Cloud",
+    "cloudHost": "meta.nxvms.com",
+    "defaultLanguage": "vi_VN",
+    "customLanguages": [],
+    "customOpenSourceLibrariesUrl": "",
+    "contact": {
+        "companyUrl": "https://oryza.vn/",
+        "supportAddress": "https://oryza.vn/",
+        "licensingAddress": "meta@networkoptix.com",
+        "systemWebPages": {
+            "homePage": "https://oryza.vn/"
+        }
+    },
+    "desktop": {
+        "clientAutoUpdates": false,
+        "customClient": true,
+        "trialLicenseKey": "0000-0000-0000-0029",
+        "releaseListUrl": "",
+        "offlineUpdateGeneratorUrl": "",
+        "customClientVariant": "",
+        "windows": {
+            "clientUpgradeCode": "{0f2ed89b-8c56-4a6c-a858-59007eb004c0}",
+            "clientBundleUpgradeCode": "{3401937b-5715-40f7-bf3d-d34b67b3b317}"
+        },
+        "macos": {
+            "bundleIdentifier": "com.networkoptix.metavms",
+            "protocolHandlerBundleIdentifier": "com.networkoptix.protocol_handler",
+            "signIdentity": "Developer ID Application: Network Optix, Inc. (L6FE34GJWM)"
+        }
+    },
+    "mobile": {
+        "enabled": false,
+        "android": {
+            "baidu": {
+                "apiKey": "",
+                "displayName": ""
+            }
+        },
+        "ios": {}
+    },
+    "paxton": {},
+    "advanced": {
+        "useMetaVersion": false,
+        "useFullCloudNameEverywhere": false,
+        "disableCodeSigning": true,
+        "customClientDisplayName": "Desktop Client"
+    }
+}
+

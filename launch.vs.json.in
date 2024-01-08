@@ -1,0 +1,46 @@
+{
+  "configurations": [
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "@customization.vmsId@.exe (bin\\@customization.vmsId@.exe)",
+      "name": "@customization.vmsId@.exe (bin\\@customization.vmsId@.exe)",
+      "args": [],
+      "env": "PATH=${env.qtdir};${env.PATH}"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "nx_vms_client_desktop_ut.exe (bin\\nx_vms_client_desktop_ut.exe)",
+      "name": "nx_vms_client_desktop_ut.exe (bin\\nx_vms_client_desktop_ut.exe)",
+      "args": [
+        "--gtest_filter=*"
+      ],
+      "env": "PATH=${env.qtdir};${env.PATH}"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "launcher.exe (bin\\launcher.exe)",
+      "name": "launcher.exe (bin\\launcher.exe)",
+      "env": "PATH=${env.qtdir};${env.PATH}"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "@customization.vmsId@ Launcher.exe (bin\\@customization.vmsId@ Launcher.exe)",
+      "name": "HD Witness Launcher.exe (bin\\HD Witness Launcher.exe)",
+      "env": "PATH=${env.qtdir};${env.PATH}"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "applauncher.exe (bin\\applauncher.exe)",
+      "name": "applauncher.exe (bin\\applauncher.exe)",
+      "env": "PATH=${env.qtdir};${env.PATH}"
+    }
+  ],
+  "defaults": {},
+  "version": "0.2.1"
+}
+
