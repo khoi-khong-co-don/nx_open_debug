@@ -268,6 +268,7 @@ APPLY(206, getFullInfo, nx::vms::api::FullInfoData, \
                        InvalidGetHashHelper(), /* getHash*/ \
                        [] (const QnTransaction<nx::vms::api::FullInfoData> & tran, const NotificationParams &notificationParams) \
                        { \
+                           qDebug() << "notificationParams.ecConnection->initNotification(tran.params)"; \
                            emit notificationParams.ecConnection->initNotification(tran.params); \
                            for (const auto& data: tran.params.discoveryData) \
                                notificationParams.discoveryNotificationManager->triggerNotification(data); \
@@ -1635,6 +1636,7 @@ namespace ApiCommand
     constexpr auto nxReflectVisitAllEnumItems(Value*, Visitor&& visitor)
     {
         using Item = nx::reflect::enumeration::Item<Value>;
+        //qDebug() << "constexpr auto nxReflectVisitAllEnumItems(Value*, Visitor&& visitor)";
         return visitor(
             Item{CompositeSave, "CompositeSave"},
             Item{NotDefined, "NotDefined"}

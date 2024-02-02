@@ -89,13 +89,13 @@ quint32 deserializeCompressedSize(BitStreamReader& reader)
 }
 
 QByteArray serializePeersMessage(
-    const std::vector<PeerDistanceRecord>& records,
-    int reservedSpaceAtFront)
+        const std::vector<PeerDistanceRecord>& records,
+        int reservedSpaceAtFront)
 {
     QByteArray result;
     result.resize(qPower2Ceil(
-        unsigned(records.size() * PeerDistanceRecord::kMaxRecordSize + reservedSpaceAtFront),
-        kByteArrayAlignFactor));
+                      unsigned(records.size() * PeerDistanceRecord::kMaxRecordSize + reservedSpaceAtFront),
+                      kByteArrayAlignFactor));
     BitStreamWriter writer;
     writer.setBuffer((quint8*) result.data(), result.size());
     try
@@ -198,7 +198,7 @@ QByteArray serializeSubscribeRequest(const QVector<SubscribeRecord>& request, in
 {
     QByteArray result;
     result.resize(qPower2Ceil(unsigned(request.size() * PeerDistanceRecord::kMaxRecordSize +
-        reservedSpaceAtFront), kByteArrayAlignFactor));
+                                       reservedSpaceAtFront), kByteArrayAlignFactor));
     BitStreamWriter writer;
     writer.setBuffer((quint8*) result.data(), result.size());
     writer.putBits(reservedSpaceAtFront * 8, 0);
@@ -336,8 +336,8 @@ QList<QByteArray> deserializeTransactionList(const QByteArray& tranList, bool* s
 }
 
 QByteArray serializeResolvePeerNumberResponse(
-    const QVector<PeerNumberResponseRecord>& peers,
-    int reservedSpaceAtFront)
+        const QVector<PeerNumberResponseRecord>& peers,
+        int reservedSpaceAtFront)
 {
     QByteArray result;
     result.reserve(peers.size() * PeerNumberResponseRecord::kRecordSize + reservedSpaceAtFront);
@@ -450,29 +450,37 @@ TransportHeader deserializeTransportHeader(const QByteArray& response, int* byte
 }
 
 vms::api::PeerDataEx deserializePeerData(
-    const network::http::HttpHeaders& headers, Qn::SerializationFormat dataFormat)
+        const network::http::HttpHeaders& headers, Qn::SerializationFormat dataFormat)
 {
     const auto defaultPeerDataEx =
-        []()
-        {
-            nx::vms::api::PeerDataEx result;
-            result.cloudHost = nx::network::SocketGlobals::cloud().cloudHost().c_str();
-            result.protoVersion = nx::vms::api::protocolVersion();
-            return result;
-        };
+            []()
+    {
+        nx::vms::api::PeerDataEx result;
+        result.cloudHost = nx::network::SocketGlobals::cloud().cloudHost().c_str();
+        result.protoVersion = nx::vms::api::protocolVersion();
+        return result;
+    };
 
     vms::api::PeerDataEx peer(defaultPeerDataEx());
 
     bool success = false;
     auto peerData = nx::utils::fromBase64(nx::network::http::getHeaderValue(headers, Qn::EC2_PEER_DATA));
+    qDebug() << nx::format("Data Nx-PeerData:    %1 ").arg(nx::network::http::getHeaderValue(headers, Qn::EC2_PEER_DATA));
     if (dataFormat == Qn::JsonFormat)
+    {
+        qDebug() << "kieu du lieu JsonFormat";
         peer = QJson::deserialized(peerData, defaultPeerDataEx(), &success);
+    }
     else if (dataFormat == Qn::UbjsonFormat)
+    {
+        qDebug() << "kieu du lieu UbjsonFormat";
         peer = QnUbjson::deserialized(peerData, defaultPeerDataEx(), &success);
-
+    }
     const auto guidHeaderIt = headers.find(Qn::EC2_CONNECTION_GUID_HEADER_NAME);
     if (guidHeaderIt != headers.cend())
+    {
         peer.connectionGuid = QnUuid::fromStringSafe(guidHeaderIt->second);
+    }
 
     return peer;
 }
@@ -500,8 +508,8 @@ vms::api::PeerDataEx deserializePeerData(const network::http::Request& request)
     if (result.peerType == nx::vms::api::PeerType::notDefined)
     {
         result.peerType = nx::reflect::fromString<vms::api::PeerType>(
-            query.queryItemValue("peerType").toStdString(),
-            vms::api::PeerType::notDefined);
+                    query.queryItemValue("peerType").toStdString(),
+                    vms::api::PeerType::notDefined);
     }
 
     if (result.id.isNull())
@@ -515,9 +523,9 @@ vms::api::PeerDataEx deserializePeerData(const network::http::Request& request)
 }
 
 void serializePeerData(
-    network::http::HttpHeaders& headers,
-    vms::api::PeerDataEx localPeer,
-    Qn::SerializationFormat dataFormat)
+        network::http::HttpHeaders& headers,
+        vms::api::PeerDataEx localPeer,
+        Qn::SerializationFormat dataFormat)
 {
     QByteArray result;
     if (dataFormat == Qn::JsonFormat)
@@ -531,9 +539,9 @@ void serializePeerData(
 }
 
 void serializePeerData(
-    network::http::Response& response,
-    vms::api::PeerDataEx peer,
-    Qn::SerializationFormat dataFormat)
+        network::http::Response& response,
+        vms::api::PeerDataEx peer,
+        Qn::SerializationFormat dataFormat)
 {
     serializePeerData(response.headers, peer, dataFormat);
 }

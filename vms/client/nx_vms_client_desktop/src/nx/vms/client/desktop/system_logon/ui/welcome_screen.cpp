@@ -402,8 +402,8 @@ void WelcomeScreen::connectToLocalSystem(
     bool storePassword)
 {
     nx::utils::Url url = parseConnectionUrlFromUserInput(serverUrl);
-    //qDebug() << nx::format("Url : %1  serverId %2   userName %3  password %4  ").args(serverUrl, serverId, userName, password);
-    qDebug() << "connect server___________________________ 1";
+    qDebug() << nx::format("Url : %1  serverId %2   userName %3  password %4  ").args(serverUrl, serverId, userName, password);
+    qDebug() << "WelcomeScreen::connectToLocalSystem     connect server___________________________ 1";
     connectToSystemInternal(
         systemId,
         serverId.isEmpty() ? std::nullopt : std::optional{QnUuid::fromStringSafe(serverId)},
@@ -547,10 +547,12 @@ void WelcomeScreen::connectToSystemInternal(
     bool storePassword,
     const nx::utils::SharedGuardPtr& completionTracker)
 {
+    qDebug() << "WelcomeScreen::connectToSystemInternal ";
     if (!m_connectingSystemId.isEmpty())
         return; //< Connection process is in progress
 
     NX_DEBUG(this, "Delayed connect to the system %1 after click on tile", address);
+    qDebug() << nx::format("Delayed connect to the system %1 after click on tile").arg(address);
     if (context()->user())
         appContext()->clientStateHandler()->saveWindowsConfiguration();
 
@@ -560,6 +562,7 @@ void WelcomeScreen::connectToSystemInternal(
         .expectedServerId = serverId});
     logonData.storePassword = storePassword;
     logonData.connectScenario = ConnectScenario::connectFromTile;
+    qDebug() << nx::format("Data logon : %1 %2 %3 %4 %5").args(logonData.address, logonData.storePassword, logonData.connectScenario, logonData.credentials.authToken.value, logonData.credentials.authToken.type);
 
     // TODO: #ynikitenkov add look after connection process
     // and don't allow to connect to two or more servers simultaneously

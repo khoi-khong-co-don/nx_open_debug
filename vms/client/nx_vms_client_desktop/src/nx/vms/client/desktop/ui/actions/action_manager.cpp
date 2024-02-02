@@ -169,6 +169,7 @@ bool Manager::canTrigger(IDType id, const Parameters& parameters)
 
 void Manager::trigger(IDType id, const Parameters& parameters)
 {
+    qDebug() << "Manager::trigger(IDType id, const Parameters& parameters)";
     if (triggerIfPossible(id, parameters))
         return;
 
@@ -180,6 +181,7 @@ void Manager::trigger(IDType id, const Parameters& parameters)
 
 bool Manager::triggerIfPossible(IDType id, const Parameters& parameters)
 {
+    qDebug() << "Manager::triggerIfPossible(IDType id, const Parameters& parameters";
     Action* action = m_actionById.value(id);
     NX_ASSERT(action);
     if (!action)

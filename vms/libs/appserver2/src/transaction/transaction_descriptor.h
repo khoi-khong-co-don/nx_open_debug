@@ -260,6 +260,7 @@ detail::TransactionDescriptorBase* getTransactionDescriptorByName(const QString&
 template<typename Param>
 detail::TransactionDescriptor<Param>* getActualTransactionDescriptorByValue(ApiCommand::Value command)
 {
+    qDebug() << "detail::TransactionDescriptor<Param>* getActualTransactionDescriptorByValue(ApiCommand::Value command)";
     auto tdBase = ec2::getTransactionDescriptorByValue(command);
     NX_ASSERT(tdBase);
     auto td = dynamic_cast<detail::TransactionDescriptor<Param>*>(tdBase);

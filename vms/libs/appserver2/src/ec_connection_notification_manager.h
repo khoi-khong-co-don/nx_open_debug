@@ -70,7 +70,7 @@ public:
             m_analyticsManager,
             source
         };
-
+        qDebug() << "void triggerNotification(const QnTransaction<T> &tran, ec2::NotificationSource source)";
         auto tdBase = getTransactionDescriptorByValue(tran.command);
         auto td = dynamic_cast<detail::TransactionDescriptor<T>*>(tdBase);
         NX_ASSERT(td, "Downcast to TransactionDescriptor<TransactionParams>* failed");

@@ -88,6 +88,8 @@ namespace QnUbjson {
     template<typename T>
     auto deserialized(const nx::ConstBufferRefType& value, T&& defaultValue = {}, bool* success = nullptr)
     {
+        QByteArray byteArray = QByteArray::fromRawData(value.data(), (int) value.size());
+        qDebug() << "Byte Array : " << byteArray;
         return deserialized(
             QByteArray::fromRawData(value.data(), (int) value.size()),
             std::forward<T>(defaultValue),

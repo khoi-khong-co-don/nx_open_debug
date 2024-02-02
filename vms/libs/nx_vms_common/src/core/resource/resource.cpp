@@ -95,7 +95,7 @@ void QnResource::updateInternal(const QnResourcePtr& source, NotifierList& notif
 {
     NX_ASSERT(getId() == source->getId() || getId().isNull());
     NX_ASSERT(toSharedPointer(this));
-
+    qDebug() << "QnResource::updateInternal(const QnResourcePtr& source, NotifierList& notifiers)";
     m_typeId = source->m_typeId;
 
     if (m_url != source->m_url)

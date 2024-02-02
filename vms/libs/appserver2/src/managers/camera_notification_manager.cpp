@@ -13,6 +13,7 @@ void QnCameraNotificationManager::triggerNotification(
     const QnTransaction<nx::vms::api::CameraData>& tran,
     NotificationSource source)
 {
+    qDebug() << "QnCameraNotificationManager::triggerNotification(const QnTransaction<nx::vms::api::CameraData>& tran)";
     NX_ASSERT(tran.command == ApiCommand::saveCamera);
     emit addedOrUpdated(tran.params, source);
 }
@@ -21,6 +22,7 @@ void QnCameraNotificationManager::triggerNotification(
     const QnTransaction<nx::vms::api::CameraDataList>& tran,
     NotificationSource source)
 {
+    qDebug() << "QnCameraNotificationManager::triggerNotification(const QnTransaction<nx::vms::api::CameraDataList>& tran,)";
     NX_ASSERT(tran.command == ApiCommand::saveCameras);
     for (const auto& camera: tran.params)
         emit addedOrUpdated(camera, source);

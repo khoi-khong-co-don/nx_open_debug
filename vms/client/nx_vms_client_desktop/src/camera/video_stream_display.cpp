@@ -34,7 +34,6 @@ extern "C" {
 
 #include "buffered_frame_displayer.h"
 #include "gl_renderer.h"
-#include <opencv2/opencv.hpp>
 using namespace std::chrono;
 using namespace nx::vms::client::desktop;
 

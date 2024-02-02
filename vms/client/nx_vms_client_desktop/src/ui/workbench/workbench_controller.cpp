@@ -1350,6 +1350,8 @@ void QnWorkbenchController::at_item_doubleClicked(
     QGraphicsItem* item,
     ClickInfo info)
 {
+    qDebug() << "------------------- at_item_doubleClicked -----------------------";
+
     if (info.modifiers.testFlag(Qt::KeyboardModifier::ShiftModifier))
         return;
 
@@ -1428,6 +1430,8 @@ void QnWorkbenchController::at_scene_clicked(QGraphicsView* view, ClickInfo info
 
 void QnWorkbenchController::at_scene_doubleClicked(QGraphicsView* /*view*/, ClickInfo /*info*/)
 {
+    qDebug() << "------------------- at_scene_doubleClicked -----------------------";
+
     if(workbench() == nullptr)
         return;
 

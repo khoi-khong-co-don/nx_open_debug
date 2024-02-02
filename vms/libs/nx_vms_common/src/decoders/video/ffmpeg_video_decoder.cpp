@@ -19,7 +19,6 @@ extern "C" {
 #include <utils/media/utils.h>
 #include <nx/metrics/metrics_storage.h>
 //#include <opencv2/opencv.hpp>
-#include <opencv2/opencv.hpp>
 static const int LIGHT_CPU_MODE_FRAME_PERIOD = 2;
 static const int MAX_DECODE_THREAD = 4;
 

@@ -85,6 +85,7 @@ MessageBus::MessageBus(
     TransactionMessageBusBase(peerType, commonModule, jsonTranSerializer, ubjsonTranSerializer),
     m_miscData(this)
 {
+    qDebug() << "MessageBus::MessageBus";
     static const int kMetaTypeRegistrator =
         []()
         {
@@ -208,6 +209,7 @@ void MessageBus::addOutgoingConnectionToPeer(
     deleteRemoveUrlById(peer);
 
     nx::utils::Url url(_url);
+    qDebug() << nx::format("MessageBus::addOutgoingConnectionToPeer    %1").arg(url);
     const auto patch = globalSettings()->isWebSocketEnabled()
         ? ConnectionBase::kWebsocketUrlPath : ConnectionBase::kHttpHandshakeUrlPath;
     if (peerType == nx::vms::api::PeerType::cloudServer)
@@ -227,6 +229,7 @@ void MessageBus::addOutgoingConnectionToPeer(
     NX_VERBOSE(this, "peer %1 addOutgoingConnection to peer %2 type %3 using url \"%4\"",
         peerName(localPeer().id),
         peerName(peer), peerType, _url);
+    qDebug() << nx::format("peer %1 addOutgoingConnection to peer %2 type %3 using url \"%4\"").args(peerName(localPeer().id),peerName(peer), peerType, _url);
     executeInThread(m_thread, [this]() {doPeriodicTasks();});
 }
 
@@ -347,7 +350,7 @@ void MessageBus::createOutgoingConnections(
                 connectionGuardSharedState(),
                 remoteConnection.peerId,
                 ConnectionLockGuard::Direction::Outgoing);
-
+            qDebug() << nx::format(" MessageBus::createOutgoingConnections   %1").arg(remoteConnection.url);
             P2pConnectionPtr connection(new Connection(
                 remoteConnection.adapterFunc,
                 remoteConnection.credentials,
@@ -448,6 +451,7 @@ void MessageBus::MiscData::update()
 
 void MessageBus::doPeriodicTasks()
 {
+    qDebug() << "MessageBus::doPeriodicTasks()";
     NX_MUTEX_LOCKER lock(&m_mutex);
     if (!isStarted())
     {
@@ -628,13 +632,13 @@ void MessageBus::at_gotMessage(
         return;
 
     const auto& payload = payloadBuffer.toByteArray();
-
+    qDebug() << nx::format("Payload WebSocket:    %1").arg(payloadBuffer.toByteArray());
     NX_MUTEX_LOCKER lock(&m_mutex);
 
     if (!isStarted())
         return;
 
-    if (m_connections.value(connection->remotePeer().id) != connection)
+    if (m_connections.value(connection->remotePeer().id) !=   connection)
         return;
 
     if (connection->state() == Connection::State::Error)
@@ -1157,6 +1161,7 @@ void MessageBus::gotTransaction(
     const TransportHeader& transportHeader,
     nx::Locker<nx::Mutex>* lock)
 {
+    qDebug() << "void MessageBus::gotTransaction(const QnTransaction<nx::vms::api::RuntimeData>& tran";
     if (localPeer().isServer() && !isSubscribedTo(connection->remotePeer()))
         return; // Ignore deprecated transaction.
 
@@ -1180,6 +1185,7 @@ void MessageBus::gotTransaction(
 
     if (m_handler)
     {
+        qDebug() << nx::format("DATA Trans: %1").arg(tran.command);
         nx::Unlocker<nx::Mutex> unlock(lock);
         m_handler->triggerNotification(tran, NotificationSource::Remote);
     }
@@ -1280,6 +1286,7 @@ bool MessageBus::handlePushTransactionData(
     // Workaround for compatibility with server 3.1/3.2 with p2p mode on
     // It could send subscribeForDataUpdates binary message among json data.
     // TODO: we have to remove this checking in 4.0 because it is fixed on server side.
+    qDebug() << "bool MessageBus::handlePushTransactionData(";
     if (localPeerEx().dataFormat == Qn::JsonFormat && !serializedTran.isEmpty()
         && serializedTran[0] == (quint8)MessageType::subscribeForDataUpdates)
     {

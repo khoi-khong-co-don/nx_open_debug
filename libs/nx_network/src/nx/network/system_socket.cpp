@@ -634,7 +634,7 @@ bool CommunicatingSocket<SocketInterfaceToImplement>::connect(
     qDebug() << nx::format("KHOI CommunicatingSocket<SocketInterfaceToImplement>::connect %1").arg(remoteAddress);
     if (remoteAddress.address.isIpAddress())
     {
-        qDebug() << "CommunicatingSocket<SocketInterfaceToImplement>::connect 1";
+        qDebug() << nx::format("connectToIp: %1").arg(remoteAddress);
         return connectToIp(remoteAddress, timeout);
     }
     auto resolvedEntries = SocketGlobals::addressResolver().resolveSync(
@@ -760,7 +760,6 @@ int CommunicatingSocket<SocketInterfaceToImplement>::recv(
 //    QString str = QString::fromUtf8(charBuffer, static_cast<int>(bufferLen));
 
 //    qDebug() << "Buffer contents as QString: " << str;
-      qDebug() << "KHOI CommunicatingSocket<SocketInterfaceToImplement>::recv" << bytesRead;
     return bytesRead;
 }
 
@@ -768,8 +767,8 @@ template<typename SocketInterfaceToImplement>
 int CommunicatingSocket<SocketInterfaceToImplement>::send(
     const void* buffer, std::size_t bufferLen)
 {
-//    const char* bytes = static_cast<const char*>(buffer);
-    qDebug() << "SEND TO SOCKET: %1" << bufferLen;
+    const char* bytes = static_cast<const char*>(buffer);
+    qDebug() << nx::format("SEND TO SOCKET: %1").arg(bytes);
 //    for (std::size_t i = 0; i < bufferLen; i++) {
 //            std::cout <<  bytes[i];
 //        }
@@ -905,14 +904,23 @@ bool CommunicatingSocket<SocketInterfaceToImplement>::connectToIp(
 
     const SystemSocketAddress addr(remoteAddress, this->m_ipVersion);
     if (!addr.get())
+    {
+        qDebug() << "None ADDRESS";
         return false;
+    }
 
     //switching to non-blocking mode to connect with timeout
     bool isNonBlockingModeBak = false;
     if (!this->getNonBlockingMode(&isNonBlockingModeBak))
+    {
+        qDebug() << "getNonBlockingMode";
         return false;
+    }
     if (!isNonBlockingModeBak && !this->setNonBlockingMode(true))
+    {
+        qDebug() << "isNonBlockingModeBak";
         return false;
+    }
 
     NX_ASSERT(addr.get()->sa_family == this->m_ipVersion);
 
@@ -1036,7 +1044,7 @@ bool CommunicatingSocket<SocketInterfaceToImplement>::connectToIp(
 
     NX_VERBOSE(this, "Connect to %1 completed with result %2",
         remoteAddress, SystemError::toString(connectErrorCode));
-
+    qDebug() << nx::format("Connect to %1 completed with result %2").args(remoteAddress, SystemError::toString(connectErrorCode));
     return m_connected;
 }
 

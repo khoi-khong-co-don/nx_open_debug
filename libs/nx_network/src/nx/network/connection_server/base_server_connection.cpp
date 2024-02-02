@@ -36,10 +36,13 @@ void BaseServerConnection::startReadingConnection(
                 NX_VERBOSE(this, "Connection %1-%2 configuration error. %3",
                     m_streamSocket->getLocalAddress(), m_streamSocket->getForeignAddress(),
                     SystemError::toString(errorCode));
+                qDebug() << nx::format("Connection %1-%2 configuration error. %3").args(m_streamSocket->getLocalAddress(), m_streamSocket->getForeignAddress(),
+                                                                                        SystemError::toString(errorCode));
 
                 return m_streamSocket->post(
                     [this, errorCode]() { onBytesRead(errorCode, (size_t) -1); });
             }
+            qDebug() << nx::format("Connection %1-%2 configuration NOERROR.").args(m_streamSocket->getLocalAddress(), m_streamSocket->getForeignAddress());
 
             m_readingConnection = true;
 
@@ -196,10 +199,20 @@ SocketAddress BaseServerConnection::getForeignAddress() const
 
 void BaseServerConnection::onBytesRead(SystemError::ErrorCode errorCode, size_t bytesRead)
 {
+    if(!m_streamSocket)
+        qDebug() << "No m_streamSocket";
+    else
+        qDebug() << nx::format("Connect m_streamSocket %1-%2 ").args(m_streamSocket->getLocalAddress(), m_streamSocket->getForeignAddress());
+
     resetInactivityTimer();
     if (errorCode != SystemError::noError)
+    {
+//        if(!m_streamSocket)
+//            qDebug() << "has error code";
+//        else
+//            qDebug() << nx::format("Has error code %1-%2 ").args(m_streamSocket->getLocalAddress(), m_streamSocket->getForeignAddress());
         return handleSocketError(errorCode);
-
+    }
     m_totalBytesReceived += bytesRead;
 
     NX_ASSERT(
@@ -209,8 +222,18 @@ void BaseServerConnection::onBytesRead(SystemError::ErrorCode errorCode, size_t 
     {
         nx::utils::InterruptionFlag::Watcher watcher(&m_connectionFreedFlag);
         bytesReceived(m_readBuffer);
+//        if(!m_streamSocket)
+//            qDebug() << "watching";
+//        else
+//            qDebug() << nx::format("watching %1-%2 ").args(m_streamSocket->getLocalAddress(), m_streamSocket->getForeignAddress());
         if (watcher.interrupted())
+        {
+//            if (!m_streamSocket)
+//               qDebug() << "Connection has been removed by handler";
+//            else
+//                qDebug() << nx::format("Connection %1-%2 has been removed by handler").args(m_streamSocket->getLocalAddress(), m_streamSocket->getForeignAddress());
             return; //< Connection has been removed by handler.
+        }
     }
 
     m_readBuffer.resize(0);
@@ -222,8 +245,10 @@ void BaseServerConnection::onBytesRead(SystemError::ErrorCode errorCode, size_t 
     {
         NX_VERBOSE(this, "Connection %1-%2 is closed by remote peer",
             m_streamSocket->getLocalAddress(), m_streamSocket->getForeignAddress());
+        qDebug() << nx::format("Connection %1-%2 is closed by remote peer").args(m_streamSocket->getLocalAddress(), m_streamSocket->getForeignAddress());
         return handleSocketError(SystemError::connectionReset);
     }
+    qDebug() << nx::format("Connection %1-%2 is success").args(m_streamSocket->getLocalAddress(), m_streamSocket->getForeignAddress());
 
     if (!m_readingConnection)
         return;

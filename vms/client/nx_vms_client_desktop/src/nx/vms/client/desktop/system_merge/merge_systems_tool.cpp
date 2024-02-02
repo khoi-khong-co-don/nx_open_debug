@@ -349,9 +349,11 @@ bool MergeSystemsTool::checkServerCertificateEquality(const Context& ctx)
     auto userProvidedChain = parseCertificateChainSafe(ctx.targetInfo.userProvidedCertificatePem);
 
     NX_VERBOSE(NX_SCOPE_TAG, chainInfo("Handshake", ctx.targetHandshakeChain));
+    qDebug() << chainInfo("Handshake", ctx.targetHandshakeChain);
     NX_VERBOSE(NX_SCOPE_TAG, chainInfo("Server", serverChain));
+    qDebug() << chainInfo("Server", serverChain);
     NX_VERBOSE(NX_SCOPE_TAG, chainInfo("User provided", userProvidedChain));
-
+    qDebug() << chainInfo("User provided", userProvidedChain);
     if (ctx.targetHandshakeChain.empty() || serverChain.empty())
         return false;
 

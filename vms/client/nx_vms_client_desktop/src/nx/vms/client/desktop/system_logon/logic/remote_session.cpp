@@ -36,6 +36,7 @@ RemoteSession::RemoteSession(
     :
     base_type(connection, systemContext, parent)
 {
+    qDebug() << "RemoteSession::RemoteSession(RemoteConnectionPtr connection,SystemContext* systemContext,QObject* parent)";
     const auto username = QString::fromStdString(connection->credentials().username);
     const auto localSystemId = connection->moduleInformation().localSystemId.toString();
     m_sessionId = SessionId(username, localSystemId);
@@ -63,7 +64,7 @@ RemoteSession::RemoteSession(
         [this, keepServerTimer](State state)
         {
             NX_DEBUG(this, "Remote session state changed: %1, keep unauthorized server", state);
-
+            qDebug() << nx::format("Remote session state changed: %1, keep unauthorized server").arg(state);
             m_keepUnauthorizedServer = true;
             if (state == State::reconnecting)
                 keepServerTimer->start();

@@ -42,12 +42,14 @@ void QnClientMessageProcessor::init(const ec2::AbstractECConnectionPtr& connecti
         if (m_status.state() != QnConnectionState::Reconnecting)
         {
             NX_DEBUG(this, "init, state -> Connecting");
+            qDebug() << "init, state -> Connecting";
             m_status.setState(QnConnectionState::Connecting);
         }
     }
     else
     {
         NX_DEBUG(this, lit("init nullptr, state -> Disconnected"));
+        qDebug() << "init nullptr, state -> Disconnected";
         m_status.setState(QnConnectionState::Disconnected);
     }
 
@@ -59,6 +61,7 @@ void QnClientMessageProcessor::init(const ec2::AbstractECConnectionPtr& connecti
         auto info = connection->moduleInformation();
         const auto serverId = info.id;
         NX_DEBUG(this, "Connection established to %1", serverId);
+        qDebug() << nx::format("Connection established to %1", serverId);
     }
     else if (m_connected)
     {
@@ -133,16 +136,22 @@ void QnClientMessageProcessor::updateResource(
     // changing resources is highly inappropriate at that time.
     if (!m_connection || !NX_ASSERT(resource))
         return;
-
+    qDebug() << nx::format("Resource Data: ").arg(resource->getName());
     resource->addFlags(Qn::remote);
     resource->removeFlags(Qn::local);
 
     base_type::updateResource(resource, source);
 
     if (QnResourcePtr ownResource = resourcePool()->getResourceById(resource->getId()))
+    {
+        qDebug() << "UPDATE RESOURCE";
         ownResource->update(resource);
+    }
     else
+    {
+        qDebug() << "ADD RESOURCE";
         resourcePool()->addResource(resource);
+    }
 }
 
 void QnClientMessageProcessor::handleRemotePeerFound(QnUuid peer, nx::vms::api::PeerType peerType)
@@ -169,6 +178,7 @@ void QnClientMessageProcessor::handleRemotePeerFound(QnUuid peer, nx::vms::api::
         return;
 
     NX_DEBUG(this, lit("peer found, state -> Connected"));
+    qDebug() << "peer found, state -> Connected";
     m_status.setState(QnConnectionState::Connected);
     m_connected = true;
     holdConnection(HoldConnectionPolicy::none);

@@ -148,9 +148,11 @@ void NetworkManager::doRequest(
     Qt::ConnectionType connectionType)
 {
     NX_VERBOSE(this, "[%1] %2", method, url);
+    qDebug() << nx::format("doRequest digestAuthen : [%1] %2").args(method, url);
     NX_ASSERT(url.userName().isEmpty(), "Credentials must be set explicitly");
     if (request->credentials().authToken.empty() && !url.userName().isEmpty())
     {
+        qDebug() << "Set username password";
         request->setCredentials(nx::network::http::PasswordCredentials(
             url.userName().toStdString(), url.password().toStdString()));
         url.setUserName(QString());
@@ -177,6 +179,7 @@ void NetworkManager::doRequest(
         [callback, reqId]
             (int requestId, Response response)
         {
+            qDebug() << nx::format("Response: %1").arg(response);
             if (reqId == requestId)
                 callback(response);
         }, connectionType);

@@ -294,6 +294,7 @@ void P2PHttpClientTransport::sendAsync(
 
 void P2PHttpClientTransport::bindToAioThread(network::aio::AbstractAioThread* aioThread)
 {
+    qDebug() << "P2PHttpClientTransport::bindToAioThread(network::aio::AbstractAioThread* aioThread)";
     BasicPollable::bindToAioThread(aioThread);
     m_readHttpClient->bindToAioThread(aioThread);
     m_writeHttpClient->bindToAioThread(aioThread);
@@ -337,6 +338,7 @@ void P2PHttpClientTransport::stopOrResumeReaderWhileInAioThread()
 
 void P2PHttpClientTransport::startReading()
 {
+    qDebug() << "P2PHttpClientTransport::startReading()";
     m_readHttpClient->setOnResponseReceived(
         [this]()
         {

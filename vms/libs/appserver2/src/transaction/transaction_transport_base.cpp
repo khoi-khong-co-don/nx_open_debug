@@ -1233,7 +1233,7 @@ void QnTransactionTransportBase::at_responseReceived(
     const nx::network::http::AsyncHttpClientPtr& client)
 {
     const int statusCode = client->response()->statusLine.statusCode;
-
+    qDebug() << "QnTransactionTransportBase::at_responseReceived";
     NX_VERBOSE(this,
         "at_responseReceived. statusCode = %1", statusCode);
 

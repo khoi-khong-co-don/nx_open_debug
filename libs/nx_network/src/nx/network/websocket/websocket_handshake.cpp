@@ -207,8 +207,10 @@ Error validateResponse(
     const nx::network::http::Request& request,
     const nx::network::http::Response& response)
 {
+    qDebug() << nx::format("Status code : %1 ").arg(response.statusLine.statusCode);
     if (response.statusLine.statusCode != nx::network::http::StatusCode::switchingProtocols)
     {
+        qDebug() << "Validation failed because response code is not 'switchingProtocols'";
         NX_DEBUG(
             kWebsocketTag, "Validation failed because response code is not 'switchingProtocols'");
         return Error::handshakeError;

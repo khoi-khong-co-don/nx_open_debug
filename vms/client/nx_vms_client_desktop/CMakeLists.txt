@@ -202,7 +202,3 @@ endif()
 if(withTests)
     add_subdirectory(unit_tests)
 endif()
-
-find_package(OpenCV REQUIRED )
-include_directories( ${OpenCV_INCLUDE_DIRS} )
-target_link_libraries( nx_vms_client_desktop PRIVATE ${OpenCV_LIBS} )

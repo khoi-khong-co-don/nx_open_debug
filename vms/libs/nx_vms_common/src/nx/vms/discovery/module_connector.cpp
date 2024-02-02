@@ -158,24 +158,29 @@ ModuleConnector::InformationReader::~InformationReader()
 void ModuleConnector::InformationReader::setHandler(
     std::function<void(std::optional<nx::vms::api::ModuleInformationWithAddresses>, QString)> handler)
 {
+    qDebug() << "ModuleConnector::InformationReader::setHandler";
     m_handler = std::move(handler);
 }
 
 void ModuleConnector::InformationReader::start(const nx::network::SocketAddress& endpoint)
 {
     const auto handler =
-        [this](nx::network::http::AsyncHttpClientPtr client) mutable
+        [this, endpoint](nx::network::http::AsyncHttpClientPtr client) mutable
         {
             NX_ASSERT(m_httpClient, client);
             const auto clientGuard = nx::utils::makeScopeGuard([client](){ client->pleaseStopSync(); });
             m_httpClient.reset();
             if (!client->hasRequestSucceeded())
             {
+                qDebug() << nx::format("HTTP request has failed: [%1], http code [%2] endpoint [%3]").args(
+                                SystemError::toString(client->lastSysErrorCode()),
+                                client->response() ? client->response()->statusLine.statusCode : 0, endpoint);
                 return nx::utils::swapAndCall(m_handler, std::nullopt,
                     nx::format("HTTP request has failed: [%1], http code [%2]").args(
                         SystemError::toString(client->lastSysErrorCode()),
                         client->response() ? client->response()->statusLine.statusCode : 0));
             }
+
 
             m_buffer = client->fetchMessageBodyBuffer();
             m_socket = client->takeSocket();
@@ -183,6 +188,9 @@ void ModuleConnector::InformationReader::start(const nx::network::SocketAddress&
             if (!m_socket->setRecvTimeout(m_parent->m_disconnectTimeout))
                 return nx::utils::swapAndCall(m_handler, std::nullopt, SystemError::getLastOSErrorText().c_str());
 
+            qDebug() << nx::format("HTTP request has successed: [%1], http code [%2] endpoint [%3]").args(
+                            SystemError::toString(client->lastSysErrorCode()),
+                            client->response() ? client->response()->statusLine.statusCode : 0, endpoint);
             readUntilError();
         };
 
@@ -229,21 +237,30 @@ void ModuleConnector::InformationReader::readUntilError()
         if (!QJson::deserialize(*object, &restResult)
             || restResult.error != nx::network::rest::Result::Error::NoError)
         {
+            qDebug() << nx::format("Host %1 error").arg(m_endpoint.address.toString());
             return nx::utils::swapAndCall(m_handler, std::nullopt, restResult.errorString);
         }
 
         nx::vms::api::ModuleInformationWithAddresses moduleInformation;
         if (!QJson::deserialize(restResult.reply, &moduleInformation))
+        {
+            qDebug() << nx::format("Host %1 Deserializiation has failed").arg(m_endpoint.address.toString());
             return nx::utils::swapAndCall(m_handler, std::nullopt, "Deserializiation has failed");
+        }
+        qDebug() << nx::format("Host %1 id server %2 ").args(m_endpoint.address.toString(), moduleInformation.id);
 
         if (moduleInformation.id.isNull())
+        {
+            qDebug() << nx::format("Host %1 Module id is null").arg(m_endpoint.address.toString());
             return nx::utils::swapAndCall(m_handler, std::nullopt, "Module id is null");
+        }
 
         const auto host = m_endpoint.address.toString();
         const bool isCloud = network::SocketGlobals::addressResolver().isCloudHostname(host);
         const bool isInvalid = isCloud && host != moduleInformation.cloudId();
         NX_VERBOSE(this, "Host '%1' is %2cloud and %3valid, cloud id '%4'",
             host, isCloud ? "" : "non-", isInvalid ? "in" : "", moduleInformation.cloudId());
+        qDebug() << nx::format("Host '%1' is %2cloud and %3valid, cloud id '%4'").args(host, isCloud ? "" : "non-", isInvalid ? "in" : "", moduleInformation.cloudId());
         if (isInvalid)
         {
             return nx::utils::swapAndCall(
@@ -261,11 +278,13 @@ void ModuleConnector::InformationReader::readUntilError()
     m_socket->readSomeAsync(&m_buffer,
         [this](SystemError::ErrorCode code, size_t size)
         {
+            qDebug() << nx::format("Size Data socket:    %1").arg(size);
+            qDebug() << nx::format("data buffer: %1").arg(m_buffer);
             if (code != SystemError::noError)
                 return nx::utils::swapAndCall(m_handler, std::nullopt, SystemError::toString(code).c_str());
 
-            if (size == 0)
-                return nx::utils::swapAndCall(m_handler, std::nullopt, "Peer has closed connection");
+//            if (size == 0)
+//                return nx::utils::swapAndCall(m_handler, std::nullopt, "Peer has closed connection");
 
             readUntilError();
         });
@@ -295,6 +314,7 @@ ModuleConnector::Module::~Module()
 void ModuleConnector::Module::addEndpoints(std::set<nx::network::SocketAddress> endpoints)
 {
     NX_VERBOSE(this, "Add endpoints %1", containerString(endpoints));
+    qDebug() << nx::format("Add endpoints %1").arg(containerString(endpoints));
     if (m_id.isNull())
     {
         // For unknown server connect to every new endpoint.
@@ -309,17 +329,25 @@ void ModuleConnector::Module::addEndpoints(std::set<nx::network::SocketAddress> 
     }
     else
     {
+        qDebug() << nx::format("Server %1 da ton tai ").arg(containerString(endpoints));
         // For known server sort endpoints by accessibility type and connect by order.
         bool hasNewEndpoints = false;
         for (auto& endpoint: endpoints)
             hasNewEndpoints |= (bool) saveEndpoint(std::move(endpoint));
-
+        qDebug() << nx::format("Gia tri cua hasNewEndpoins     %1").arg(hasNewEndpoints);
         if (hasNewEndpoints)
         {
+            qDebug() << nx::format("Server %1 hasNewEndpoints ").arg(containerString(endpoints));
             if (m_connectedReader || !m_attemptingReaders.empty())
+            {
+                qDebug() << nx::format("Server %1 remakeConnection ").arg(containerString(endpoints));
                 remakeConnection();
+            }
             else
+            {
+                qDebug() << nx::format("Server %1 ensureConnection ").arg(containerString(endpoints));
                 ensureConnection();
+            }
         }
     }
 }
@@ -327,12 +355,16 @@ void ModuleConnector::Module::addEndpoints(std::set<nx::network::SocketAddress> 
 void ModuleConnector::Module::ensureConnection()
 {
     if ((m_id.isNull()) || (m_attemptingReaders.empty() && !m_connectedReader))
+    {
+        qDebug() << "ModuleConnector::Module::ensureConnection()";
         connectToGroup(m_endpoints.begin());
+    }
 }
 
 void ModuleConnector::Module::remakeConnection()
 {
     NX_DEBUG(this, "Initiate reconnect for better endpoints");
+    qDebug() << "Initiate reconnect for better endpoints";
     m_connectedReader.reset();
     m_attemptingReaders.clear();
     ensureConnection();
@@ -400,6 +432,7 @@ std::optional<ModuleConnector::Module::Endpoints::iterator>
     if (insertIntoGroup(group, endpoint))
     {
         NX_DEBUG(this, "Save endpoint %1 to %2", endpoint, group->first);
+        qDebug() << nx::format("Save endpoint %1 to %2").args(endpoint, group->first);
         return group;
     }
 
@@ -414,6 +447,7 @@ void ModuleConnector::Module::connectToGroup(Endpoints::iterator endpointsGroup)
             m_parent->m_disconnectedHandler(m_id);
 
         NX_VERBOSE(this, "Refuse to connect in passive mode");
+        qDebug() << "Refuse to connect in passive mode";
         return;
     }
 
@@ -422,6 +456,7 @@ void ModuleConnector::Module::connectToGroup(Endpoints::iterator endpointsGroup)
     {
         NX_VERBOSE(this, "Reconnect was requested %1 before timeout, resetting reconnect delays",
             *timeLeft);
+        qDebug() << nx::format("Reconnect was requested %1 before timeout, resetting reconnect delays").arg(timeLeft);
         m_reconnectTimer.cancelSync();
     }
 
@@ -431,6 +466,7 @@ void ModuleConnector::Module::connectToGroup(Endpoints::iterator endpointsGroup)
         {
             m_reconnectTimer.scheduleNextTry([this](){ connectToGroup(m_endpoints.begin()); });
             NX_VERBOSE(this, "No more endpoints, retry in %1", m_reconnectTimer.currentDelay());
+            qDebug() << nx::format("No more endpoints, retry in %1").arg(m_reconnectTimer.currentDelay());
             m_parent->m_disconnectedHandler(m_id);
         }
 
@@ -443,6 +479,7 @@ void ModuleConnector::Module::connectToGroup(Endpoints::iterator endpointsGroup)
     NX_VERBOSE(this, "Connect to group %1: %2",
         endpointsGroup->first,
         containerString(endpointsGroup->second));
+    qDebug() << nx::format("Connect to group %1: %2").args(endpointsGroup->first,containerString(endpointsGroup->second));
 
     // Initiate parallel connects to each endpoint in a group.
     size_t endpointsInProgress = 0;
@@ -451,6 +488,7 @@ void ModuleConnector::Module::connectToGroup(Endpoints::iterator endpointsGroup)
         if (m_forbiddenEndpoints.count(endpoint.toString()))
         {
             NX_VERBOSE(this, "Enpoint %1 is forbidden", endpoint);
+            qDebug() << nx::format("Enpoint %1 is forbidden").arg(endpoint);
             continue;
         }
 
@@ -458,11 +496,13 @@ void ModuleConnector::Module::connectToGroup(Endpoints::iterator endpointsGroup)
         if (endpoint.address.isPureIpV6())
         {
             NX_VERBOSE(this, "Enpoint %1 is omited, IPv6 is not fully supported yet", endpoint);
+            qDebug() << nx::format("Enpoint %1 is omited, IPv6 is not fully supported yet").arg(endpoint);
             continue;
         }
 
         ++endpointsInProgress;
         NX_ASSERT(!endpoint.toString().empty());
+        qDebug() << nx::format("connectToEndpoint %1 --------- ").arg(endpoint);
         connectToEndpoint(endpoint, endpointsGroup);
     }
 
@@ -475,6 +515,7 @@ void ModuleConnector::Module::connectToEndpoint(
     const nx::network::SocketAddress& endpoint, Endpoints::iterator endpointsGroup)
 {
     NX_VERBOSE(this, "Attempt to connect by %1", endpoint);
+    qDebug() << nx::format("Attempt to connect by %1").arg(endpoint);
     m_attemptingReaders.push_front(std::make_unique<InformationReader>(m_parent));
 
     const auto readerIt = m_attemptingReaders.begin();
@@ -509,6 +550,7 @@ void ModuleConnector::Module::connectToEndpoint(
             }
 
             NX_DEBUG(this, "Could not connect to %1: %2", endpoint, description);
+            qDebug()<< nx::format("Could not connect to %1: %2").args(endpoint, description);
 
             // When the last endpoint in a group fails try the next group.
             if (m_attemptingReaders.empty())
@@ -541,28 +583,34 @@ bool ModuleConnector::Module::saveConnection(
         [this, endpoint](std::optional<nx::vms::api::ModuleInformationWithAddresses> information,
             QString description) mutable
         {
+            qDebug() << "ModuleConnector::Module::saveConnection setHandler --------- ";
             if (information)
             {
                 NX_VERBOSE(this, "Module information update from %1", endpoint);
+                qDebug() << nx::format("Module information update from %1").arg(endpoint);
                 return m_parent->m_connectedHandler(*information, endpoint, m_connectedReader->address());
             }
 
             NX_VERBOSE(this, "Connection to %1 is closed: %2", endpoint, description);
-            m_connectedReader.reset();
-            ensureConnection(); //< Reconnect attempt.
+            qDebug() << nx::format("Connection to %1 is closed: %2").args(endpoint, description);
+            qDebug() << "Server bi mat ket noi ----> tien hanh ket noi lai";
+            std::this_thread::sleep_for(std::chrono::seconds(10));
+            /////////// KHOI SUA //////////////
+//            m_connectedReader.reset();
+//            ensureConnection(); //< Reconnect attempt.
 
-            const auto reconnectTimeout = m_parent->m_disconnectTimeout
-                * std::chrono::milliseconds::rep(m_endpoints.size());
-            m_disconnectTimer.start(reconnectTimeout,
-                [this, reconnectTimeout]()
-                {
-                    NX_VERBOSE(this, "Reconnect did not happen in %1", reconnectTimeout);
-                    m_parent->m_disconnectedHandler(m_id);
-                });
+//            const auto reconnectTimeout = m_parent->m_disconnectTimeout
+//                * std::chrono::milliseconds::rep(m_endpoints.size());
+//            m_disconnectTimer.start(reconnectTimeout,
+//                [this, reconnectTimeout]()
+//                {
+//                    NX_VERBOSE(this, "Reconnect did not happen in %1", reconnectTimeout);
+//                    m_parent->m_disconnectedHandler(m_id);
+//                });
         });
 
-    NX_VERBOSE(this, "Connected to %1 by %2 (resolved address: %3)",
-        m_id, endpoint, m_connectedReader->address());
+    NX_VERBOSE(this, "Connected to %1 by %2 (resolved address: %3)", m_id, endpoint, m_connectedReader->address());
+    qDebug() << nx::format("Connected to %1 by %2 (resolved address: %3)").args( m_id, endpoint, m_connectedReader->address());
     m_parent->m_connectedHandler(information, std::move(endpoint), m_connectedReader->address());
     m_reconnectTimer.reset();
     m_disconnectTimer.cancelSync();

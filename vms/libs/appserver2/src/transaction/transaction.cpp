@@ -30,11 +30,12 @@ namespace ApiCommand
         return descriptor ? descriptor->getValue() : ApiCommand::NotDefined;
     }
 
-    bool isSystem(Value val) { return getTransactionDescriptorByValue(val)->isSystem; }
-    bool isRemoveOperation(Value val) { return getTransactionDescriptorByValue(val)->isRemoveOperation; }
+    bool isSystem(Value val) {qDebug() << "isSystem(Value val)"; return getTransactionDescriptorByValue(val)->isSystem; }
+    bool isRemoveOperation(Value val) { qDebug() << "isRemoveOperation(Value val)";return getTransactionDescriptorByValue(val)->isRemoveOperation; }
 
     bool isPersistent(Value val)
     {
+        qDebug() << "isPersistent(Value val)";
         return val == CompositeSave || getTransactionDescriptorByValue(val)->isPersistent;
     }
 }

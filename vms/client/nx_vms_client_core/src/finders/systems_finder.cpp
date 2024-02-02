@@ -102,7 +102,7 @@ void QnSystemsFinder::addSystemsFinder(QnAbstractSystemsFinder* finder, int prio
     *connections << connect(finder, &QnAbstractSystemsFinder::systemDiscovered, this,
         [this, priority](const QnSystemDescriptionPtr& system)
         {
-        qDebug() << __func__ << " no thay server  login cho nay";
+        qDebug() << __func__ << " no thay server chua login cho nay";
             onBaseSystemDiscovered(system, priority);
         });
 
@@ -122,7 +122,7 @@ void QnSystemsFinder::addSystemsFinder(QnAbstractSystemsFinder* finder, int prio
 
 void QnSystemsFinder::onBaseSystemDiscovered(const QnSystemDescriptionPtr& system, int priority)
 {
-    qDebug() << __func__ << "START";
+    qDebug() << "QnSystemsFinder::onBaseSystemDiscovered START";
     const auto it = m_systems.find(system->id());
     if (it != m_systems.end())
     {
@@ -155,32 +155,39 @@ void QnSystemsFinder::onBaseSystemDiscovered(const QnSystemDescriptionPtr& syste
 
     const AggregatorPtr target(new QnSystemDescriptionAggregator(priority, system));
     m_systems.insert(target->id(), target);
-    qDebug() << __func__ << target->name();
+    qDebug() << "QnSystemsFinder::onBaseSystemDiscovered     -----     " <<target->name();
     connect(target.get(), &QnBaseSystemDescription::systemNameChanged, this,
         [this, target]() { updateRecentConnections(target->localId(), target->name()); });
 
     updateRecentConnections(target->localId(), target->name());
     emit systemDiscovered(target.dynamicCast<QnBaseSystemDescription>());
-    qDebug() << __func__ << "END";
+    qDebug() << "QnSystemsFinder::onBaseSystemDiscovered   END";
 }
 
 void QnSystemsFinder::updateRecentConnections(const QnUuid& localSystemId, const QString& name)
 {
-    qDebug() << __func__ << "START";
+    qDebug() << "QnSystemsFinder::updateRecentConnections START";
+    qDebug() << "NAME Server: ---------- " << name;
     auto connections = qnClientCoreSettings->recentLocalConnections();
 
     auto it = connections.find(localSystemId);
 
     if (it == connections.end())
+    {
+        qDebug() << "QnSystemsFinder::updateRecentConnections connections.end()";
         return;
-
+    }
     if (it->systemName == name)
+    {
+        qDebug() << "QnSystemsFinder::updateRecentConnections systemName == name";
         return;
+    }
 
     it->systemName = name;
+
     qnClientCoreSettings->setRecentLocalConnections(connections);
     qnClientCoreSettings->save();
-    qDebug() << __func__ << "END";
+    qDebug() << "QnSystemsFinder::updateRecentConnections END";
 }
 
 void QnSystemsFinder::onSystemLost(const QString& systemId, int priority)

@@ -20,7 +20,7 @@ WebSocket::WebSocket(
     ReceiveMode receiveMode,
     Role role,
     FrameType frameType,
-    network::websocket::CompressionType compressionType)
+    network::websocket::CompressionType compressionType, int port)
     :
     m_socket(std::move(streamSocket)),
     m_parser(role, std::bind(&WebSocket::gotFrame, this, _1, _2, _3)),
@@ -43,13 +43,15 @@ WebSocket::WebSocket(
     m_socket->setSendTimeout(0);
     bindToAioThread(m_socket->getAioThread());
     m_readBuffer.reserve(kBufferSize);
+    qDebug() << "PORT SU DUNG LA:     "   << std::to_string(port).c_str();
 }
 
 WebSocket::WebSocket(
     std::unique_ptr<AbstractStreamSocket> streamSocket,
     Role role,
     FrameType frameType,
-    network::websocket::CompressionType compressionType)
+    network::websocket::CompressionType compressionType,
+        int port)
     :
     WebSocket(
         std::move(streamSocket),
@@ -57,7 +59,7 @@ WebSocket::WebSocket(
         ReceiveMode::message,
         role,
         frameType,
-        compressionType)
+        compressionType, port)
 {
 }
 
@@ -204,6 +206,7 @@ void WebSocket::readSomeAsync(nx::Buffer* const buffer, IoCompletionHandler hand
                     this,
                     "readSomeAsync called after connection has been terminated. Ignoring.");
                 handler(SystemError::connectionAbort, 0);
+                qDebug() << nx::format("readSomeAsync called after connection has been terminated. Ignoring.");
                 return;
             }
 

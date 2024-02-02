@@ -1727,11 +1727,11 @@ CameraDiagnostics::Result QnRtspClient::sendRequestAndReceiveResponse(
 
         ////////////// send data to socket ///////////////////////////////////////////
         qDebug() << "QnRtspClient::sendRequestAndReceiveResponse";
-//        if( m_tcpSock->send(requestBuf.data(), requestBuf.size()) <= 0 )
-//        {
-//            NX_DEBUG(this, "Failed to send request: %1", SystemError::getLastOSErrorText());
-//            return CameraDiagnostics::ConnectionClosedUnexpectedlyResult(m_url.host(), port);
-//        }
+        if( m_tcpSock->send(requestBuf.data(), requestBuf.size()) <= 0 )
+        {
+            NX_DEBUG(this, "Failed to send request: %1", SystemError::getLastOSErrorText());
+            return CameraDiagnostics::ConnectionClosedUnexpectedlyResult(m_url.host(), port);
+        }
 
         if( !readTextResponse(responseBuf) )
         {
