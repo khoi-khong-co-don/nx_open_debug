@@ -21,6 +21,7 @@ void QnRuntimeInfoManager::setMessageProcessor(QnCommonMessageProcessor* message
         connect(messageProcessor, &QnCommonMessageProcessor::runtimeInfoChanged, this,
             [this](const nx::vms::api::RuntimeData &runtimeData)
             {
+                qDebug() << "Connect emit runtimeInfoChanged 4";
                 NX_DEBUG(this, "Remote peer info update: id %1, type %2",
                     runtimeData.peer.id, runtimeData.peer.peerType);
                 QnPeerRuntimeInfo info(runtimeData);

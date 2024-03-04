@@ -268,6 +268,7 @@ APPLY(206, getFullInfo, nx::vms::api::FullInfoData, \
                        InvalidGetHashHelper(), /* getHash*/ \
                        [] (const QnTransaction<nx::vms::api::FullInfoData> & tran, const NotificationParams &notificationParams) \
                        { \
+                           qDebug() << "notificationParams.ecConnection->initNotification(tran.params)"; \
                            emit notificationParams.ecConnection->initNotification(tran.params); \
                            for (const auto& data: tran.params.discoveryData) \
                                notificationParams.discoveryNotificationManager->triggerNotification(data); \
@@ -1389,6 +1390,7 @@ APPLY(9004, runtimeInfoChanged, nx::vms::api::RuntimeData, \
                        InvalidGetHashHelper(), \
                        [] (const QnTransaction<nx::vms::api::RuntimeData> & tran, const NotificationParams &notificationParams) \
                         { \
+                            qDebug() << "APPLY(9004, runtimeInfoChanged, nx::vms::api::RuntimeData";\
                             NX_ASSERT(tran.command == ApiCommand::runtimeInfoChanged); \
                             emit notificationParams.ecConnection->runtimeInfoChanged(tran.params); \
                         }, \
@@ -1635,6 +1637,7 @@ namespace ApiCommand
     constexpr auto nxReflectVisitAllEnumItems(Value*, Visitor&& visitor)
     {
         using Item = nx::reflect::enumeration::Item<Value>;
+        //qDebug() << "constexpr auto nxReflectVisitAllEnumItems(Value*, Visitor&& visitor)";
         return visitor(
             Item{CompositeSave, "CompositeSave"},
             Item{NotDefined, "NotDefined"}
@@ -1829,6 +1832,7 @@ void serialize(QnJsonContext* ctx, const QnTransaction<T>& tran, QJsonValue* tar
 template<class T>
 bool deserialize(QnJsonContext* ctx, const QJsonValue& value, QnTransaction<T>* target)
 {
+    qDebug() << nx::format("Json Value:    %1").arg(value);
     return
         QJson::deserialize(ctx, value, static_cast<QnAbstractTransaction*>(target)) &&
         QJson::deserialize(ctx, value.toObject(), QLatin1String("params"), &target->params);

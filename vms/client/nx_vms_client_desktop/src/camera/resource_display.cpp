@@ -25,6 +25,7 @@ QnResourceDisplay::QnResourceDisplay(const QnResourcePtr &resource, QObject *par
     QnResourceConsumer(resource),
     m_started(false)
 {
+    qDebug() << "QnResourceDisplay::QnResourceDisplay";
     NX_ASSERT(resource);
 
     m_mediaResource = resource.dynamicCast<QnMediaResource>();

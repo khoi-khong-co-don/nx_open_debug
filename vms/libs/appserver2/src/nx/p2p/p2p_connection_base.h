@@ -277,6 +277,7 @@ private:
 
     // For tests.
     static bool s_noPingSupportClientHeader;
+    int portServer = 7001;
 };
 
 QString toString(ConnectionBase::State value);

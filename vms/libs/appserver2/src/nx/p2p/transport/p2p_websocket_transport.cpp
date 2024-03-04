@@ -9,9 +9,9 @@ P2PWebsocketTransport::P2PWebsocketTransport(
     network::websocket::Role role,
     network::websocket::FrameType frameType,
     network::websocket::CompressionType compressionType,
-    std::chrono::milliseconds aliveTimeout)
+    std::chrono::milliseconds aliveTimeout, int port)
     :
-    m_webSocket(new network::WebSocket(std::move(socket), role, frameType, compressionType))
+    m_webSocket(new network::WebSocket(std::move(socket), role, frameType, compressionType, port))
 {
     bindToAioThread(m_webSocket->getAioThread());
     m_webSocket->setAliveTimeout(aliveTimeout);
@@ -28,6 +28,7 @@ void P2PWebsocketTransport::readSomeAsync(
     nx::Buffer* const buffer,
     network::IoCompletionHandler handler)
 {
+    qDebug() << "P2PWebsocketTransport::readSomeAsync";
     m_webSocket->readSomeAsync(buffer, std::move(handler));
 }
 

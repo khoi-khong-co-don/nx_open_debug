@@ -1696,6 +1696,8 @@ DescriptorBaseContainer transactionDescriptors = {
 
 detail::TransactionDescriptorBase *getTransactionDescriptorByValue(ApiCommand::Value v)
 {
+    qDebug() << "detail::TransactionDescriptorBase *getTransactionDescriptorByValue(ApiCommand::Value v)";
+    qDebug() << nx::format("Data API command: %1").arg(v);
     auto it = detail::transactionDescriptors.get<0>().find(v);
     bool isEnd = it == detail::transactionDescriptors.get<0>().end();
     NX_ASSERT(!isEnd, "ApiCommand::Value not found");

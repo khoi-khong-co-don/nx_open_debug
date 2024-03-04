@@ -332,6 +332,7 @@ void QnMediaServerResource::setGuidConflictDetected(bool value)
 
 QString QnMediaServerResource::rtspUrl() const
 {
+    qDebug() << "QnMediaServerResource::rtspUrl";
     bool isSecure = true;
 
     if (auto context = systemContext())

@@ -11,12 +11,13 @@ namespace nx::p2p {
 class P2PWebsocketTransport : public IP2PTransport
 {
 public:
+    // KHOI THEM PORT SERVER TRONG HAM KHOI TAO//////
     P2PWebsocketTransport(
         std::unique_ptr<network::AbstractStreamSocket> socket,
         network::websocket::Role role,
         network::websocket::FrameType frameType,
         network::websocket::CompressionType compressionType,
-        std::chrono::milliseconds aliveTimeout);
+        std::chrono::milliseconds aliveTimeout, int port);
 
     virtual void readSomeAsync(
         nx::Buffer* const buffer,

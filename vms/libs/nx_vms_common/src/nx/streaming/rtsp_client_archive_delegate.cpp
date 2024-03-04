@@ -97,6 +97,7 @@ QnRtspClientArchiveDelegate::QnRtspClientArchiveDelegate(
     m_sleepIfEmptySocket(sleepIfEmptySocket),
     m_lastError(CameraDiagnostics::NoErrorResult())
 {
+    qDebug() << "KHOI TAO QnRtspClientArchiveDelegate";
     m_rtspSession->setPlayNowModeAllowed(true); //< Default value.
     m_footageUpToDate.test_and_set();
     m_currentServerUpToDate.test_and_set();
@@ -223,6 +224,7 @@ QString getUrl(const QnSecurityCamResourcePtr& camera, const QnMediaServerResour
         return QString();
 
     QString url = server->rtspUrl() + QLatin1Char('/');
+    qDebug() << "getUrl   url:     "  << url;
     if (camera)
         url += camera->getPhysicalId();
     else
@@ -387,6 +389,7 @@ bool QnRtspClientArchiveDelegate::openInternal()
     if (!m_fixedServer)
     {
         m_server = getServerOnTime(m_position); // try to update server
+        qDebug() << nx::format("QnRtspClientArchiveDelegate::openInternal Get Server:   %1").arg(m_server);
         if (m_server == 0 || m_server->getStatus() == nx::vms::api::ResourceStatus::offline)
         {
             if (m_isMultiserverAllowed && isSpecialTimeValue(m_globalMinArchiveTime))
@@ -522,6 +525,7 @@ qint64 QnRtspClientArchiveDelegate::endTime() const
 
 bool QnRtspClientArchiveDelegate::reopen()
 {
+    qDebug() << "QnRtspClientArchiveDelegate::reopen";
     close();
 
     if (m_blockReopening)
@@ -547,6 +551,7 @@ bool QnRtspClientArchiveDelegate::isConnectionExpired() const
 
 QnAbstractMediaDataPtr QnRtspClientArchiveDelegate::getNextData()
 {
+    qDebug() << "QnRtspClientArchiveDelegate::getNextData";
     if (!m_currentServerUpToDate.test_and_set() || isConnectionExpired())
         reopen();
 
@@ -681,6 +686,7 @@ QnAbstractMediaDataPtr QnRtspClientArchiveDelegate::getNextDataInternal()
         qint64 parserPosition = qint64(AV_NOPTS_VALUE);
         if (codecName == QLatin1String("ffmpeg"))
         {
+            qDebug() << "QnRtspClientArchiveDelegate::getNextDataInternal ffmpeg";
             auto [packet, success] =  processFFmpegRtpPayload(data, blockSize, rtpChannelNum/2, &parserPosition);
             result = std::dynamic_pointer_cast<QnAbstractMediaData>(packet);
             if (!result && m_frameCnt == 0 && receiveTimer.elapsed() > 4000)
@@ -749,6 +755,7 @@ qint64 QnRtspClientArchiveDelegate::seek(qint64 startTime, qint64 endTime)
 
 qint64 QnRtspClientArchiveDelegate::seek(qint64 time, bool findIFrame)
 {
+    qDebug() << "QnRtspClientArchiveDelegate::seek";
     NX_DEBUG(this,
         "Set position %1 for device %2",
         nx::utils::timestampToDebugString(time / 1000),
@@ -888,6 +895,7 @@ nx::utils::SoftwareVersion extractServerVersion(const nx::String& serverString)
 std::pair<QnAbstractDataPacketPtr, bool> QnRtspClientArchiveDelegate::processFFmpegRtpPayload(
     quint8* data, int dataSize, int channelNum, qint64* parserPosition)
 {
+    qDebug() << "QnRtspClientArchiveDelegate::processFFmpegRtpPayload";
     NX_MUTEX_LOCKER lock( &m_mutex );
 
     QnAbstractMediaDataPtr result;

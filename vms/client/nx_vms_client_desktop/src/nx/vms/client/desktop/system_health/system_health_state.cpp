@@ -203,7 +203,7 @@ SystemHealthState::Private::Private(SystemHealthState* q):
         [this]() { updateServersWithoutStorages(); });
 
     connect(runtimeInfoManager, &QnRuntimeInfoManager::runtimeInfoChanged, q,
-        [this]() { updateServersWithoutStorages(); });
+        [this]() { qDebug() << "Connect emit runtimeInfoChanged 2"; updateServersWithoutStorages(); });
 
     updateServersWithoutStorages();
 

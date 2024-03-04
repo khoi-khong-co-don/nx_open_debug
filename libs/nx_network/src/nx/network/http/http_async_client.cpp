@@ -93,6 +93,7 @@ std::unique_ptr<AbstractStreamSocket> AsyncClient::takeSocket()
     {
         m_socket->cancelIOSync(nx::network::aio::etNone);
         NX_VERBOSE(this, "Giving away socket %1", m_socket.get());
+        qDebug() << nx::format("Giving away socket 1 %1").arg(m_socket.get());
         SocketGlobals::instance().allocationAnalyzer().recordObjectMove(m_socket.get());
         return std::exchange(m_socket, nullptr);
     }
@@ -103,6 +104,7 @@ std::unique_ptr<AbstractStreamSocket> AsyncClient::takeSocket()
         SocketGlobals::instance().allocationAnalyzer().recordObjectMove(socket.get());
         m_messagePipeline.reset();
         NX_VERBOSE(this, "Giving away socket %1", socket.get());
+        qDebug() << nx::format("Giving away socket 2 %1").arg(socket.get());
         return socket;
     }
 
@@ -178,7 +180,7 @@ void AsyncClient::setRequestBody(std::unique_ptr<AbstractMsgBodySource> body)
 
 void AsyncClient::doGet(const nx::utils::Url& url)
 {
-    qDebug() << nx::format("HTTP: %1").args(url);
+    qDebug() << nx::format("HTTP AsyncClient: %1").args(url);
     doRequest(nx::network::http::Method::get, url);
 }
 
@@ -387,10 +389,11 @@ void AsyncClient::doRequest(
     const nx::utils::Url& urlOriginal)
 {
     NX_VERBOSE(this, "Issuing request %1 %2 to %3", method, urlOriginal.path(), urlOriginal);
-
+    qDebug() << nx::format("Issuing request %1 %2 to %3").args(method, urlOriginal.path(), urlOriginal);
     nx::utils::Url url = urlOriginal;
     if (url.host().isEmpty() && m_messagePipeline != nullptr)
     {
+
         url.setHost(m_messagePipeline->socket()->getForeignAddress().address.toString());
         url.setPort(m_messagePipeline->socket()->getForeignAddress().port);
     }
@@ -401,6 +404,7 @@ void AsyncClient::doRequest(
     resetDataBeforeNewRequest();
     m_requestUrl = url;
     m_contentLocationUrl = url;
+
     composeRequest(method);
     if (m_requestBody)
     {
@@ -413,7 +417,7 @@ void AsyncClient::doRequest(
 
     if (m_customRequestPrepareFunc)
         m_customRequestPrepareFunc(&m_request);
-
+    qDebug() << nx::format("Check URL: %1").arg(m_contentLocationUrl);
     initiateHttpMessageDelivery();
 }
 
@@ -464,6 +468,7 @@ nx::Buffer AsyncClient::fetchMessageBodyBuffer()
 {
     if (logTraffic())
         NX_VERBOSE(this, "Response message body buffer:\n%1\n\n", m_responseMessageBody);
+    //qDebug() << nx::format("Response message body buffer:\n%1\n\n").arg(m_responseMessageBody);
 
     return std::exchange(m_responseMessageBody, {});
 }
@@ -592,12 +597,13 @@ void AsyncClient::stopWhileInAioThread()
 void AsyncClient::asyncConnectDone(SystemError::ErrorCode errorCode)
 {
     NX_VERBOSE(this, "Connect to %1 completed with result %2", m_contentLocationUrl, errorCode);
-
+    qDebug() << nx::format("Connect to %1 completed with result %2").args(m_contentLocationUrl, errorCode);
     initializeMessagePipeline();
 
     if (errorCode == SystemError::noError)
     {
         NX_VERBOSE(this, "Sending request %1 (url %2)", m_request.requestLine, m_contentLocationUrl);
+        qDebug() << nx::format("Sending request %1 (url %2)").args(m_request.requestLine, m_contentLocationUrl);
 
         m_remoteEndpointWithProtocol = endpointWithProtocol(m_contentLocationUrl);
         sendRequest();
@@ -645,7 +651,8 @@ void AsyncClient::onRequestSent(SystemError::ErrorCode errorCode)
     NX_VERBOSE(this, "Request has been successfully sent to %1 from %2. %3",
         m_contentLocationUrl, m_messagePipeline->socket()->getLocalAddress(),
         logTraffic() ? request().toString() : request().requestLine.toString());
-
+    qDebug() << nx::format("Request has been successfully sent to %1 from %2. %3").args(m_contentLocationUrl, m_messagePipeline->socket()->getLocalAddress(),
+                                                                                        logTraffic() ? request().toString() : request().requestLine.toString());
     ++m_totalRequestsSentViaCurrentConnection;
     ++m_totalRequestsSent;
 
@@ -656,9 +663,10 @@ void AsyncClient::onRequestSent(SystemError::ErrorCode errorCode)
     {
         NX_VERBOSE(this, "Error configuring connection to %1. %2",
             m_contentLocationUrl, SystemError::getLastOSErrorText());
+        qDebug() << nx::format("Error configuring connection to %1. %2").args(m_contentLocationUrl, SystemError::getLastOSErrorText());
         return;
     }
-
+    qDebug() << nx::format(" NOERROR configuring connection to %1. %2").args(m_contentLocationUrl, SystemError::getLastOSErrorText());
     m_state = State::sReceivingResponse;
     m_messagePipeline->startReadingConnection(m_timeouts.responseReadTimeout);
 }
@@ -852,16 +860,20 @@ void AsyncClient::initiateHttpMessageDelivery()
                 case ConnectionReusePolicy::establishedPipeline:
                     NX_VERBOSE(this, "Sending request %1 (url %2) via reused connection",
                         m_request.requestLine, m_contentLocationUrl);
+                        qDebug() << "ConnectionReusePolicy::establishedPipeline";
+                    //qDebug() << nx::format("Sending request %1 (url %2) via reused connection").args(m_request.requestLine, m_contentLocationUrl);
 
                     m_remoteEndpointWithProtocol = endpointWithProtocol(m_contentLocationUrl);
                     sendRequest();
                     break;
 
                 case ConnectionReusePolicy::rawConnection:
+                    qDebug() << "ConnectionReusePolicy::rawConnection";
                     sendRequestOverExternalConnection();
                     break;
 
                 case ConnectionReusePolicy::noReuse:
+                    qDebug() << "ConnectionReusePolicy::noReuse:";
                     m_messagePipeline.reset();
                     initiateTcpConnection();
                     break;
@@ -889,7 +901,7 @@ void AsyncClient::sendRequestOverExternalConnection()
 {
     NX_VERBOSE(this, "Sending request %1 (url %2) via external connection",
         m_request.requestLine, m_contentLocationUrl);
-
+//    qDebug() << nx::format( "Sending request %1 (url %2) via external connection").args(m_request.requestLine, m_contentLocationUrl);
     if (!configureSocket(m_messagePipeline->socket().get()))
     {
         return post([this, err = SystemError::getLastOSErrorCode()]()
@@ -921,7 +933,7 @@ bool AsyncClient::configureSocket(AbstractStreamSocket* connection)
 void AsyncClient::initiateTcpConnection()
 {
     NX_ASSERT(!m_socket);
-
+    qDebug() << nx::format("AsyncClient::initiateTcpConnection():      %1").arg(m_contentLocationUrl);;
     m_state = State::sInit;
 
     SocketAddress remoteAddress;
@@ -960,6 +972,7 @@ void AsyncClient::initiateTcpConnection()
 
     NX_VERBOSE(this, "Opening connection to %1. url %2, socket %3",
         remoteAddress, m_contentLocationUrl, m_socket->handle());
+    qDebug() << nx::format("Opening connection to %1. url %2, socket %3").args(remoteAddress, m_contentLocationUrl, m_socket->handle());
 
     if (!configureSocket(m_socket.get()))
         return post([this, err = SystemError::getLastOSErrorCode()]() { asyncConnectDone(err); });
@@ -968,7 +981,9 @@ void AsyncClient::initiateTcpConnection()
 
     m_socket->connectAsync(
         remoteAddress,
-        [this](auto result) { asyncConnectDone(result); });
+        [this, remoteAddress](auto result) {
+            asyncConnectDone(result);
+    });
 }
 
 void AsyncClient::stopReading()
@@ -1101,6 +1116,10 @@ void AsyncClient::composeRequest(const Method& httpMethod)
     const bool useHttp11 = true;   //TODO #akolesnikov check if we need it (e.g. we using keep-alive or requesting live capture)
 
     prepareRequestLine(useHttp11, httpMethod);
+    /////////// KHOI THEM ///////////////
+    //qDebug() << nx::format().arg();
+
+    ///////////////////////////////////
 
     // Adding user credentials.
     if (!m_contentLocationUrl.userName().isEmpty())

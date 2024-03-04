@@ -126,7 +126,7 @@ nx::network::Pollable* CloudStreamSocket::pollable()
 bool CloudStreamSocket::connect(const SocketAddress& addr, std::chrono::milliseconds timeout)
 {
     qDebug() << "KHOI CloudStreamSocket::connect";
-    qDebug() << nx::format("socket address: %1").arg(addr);
+    qDebug() << nx::format("CloudStreamSocket::connect socket address: %1").arg(addr);
     // The function is blocking. So, it MUST NOT be called within an AIO thread.
     NX_ASSERT(!SocketGlobals::aioService().isInAnyAioThread());
 

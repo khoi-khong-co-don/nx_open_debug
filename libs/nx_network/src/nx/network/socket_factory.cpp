@@ -84,6 +84,7 @@ std::unique_ptr<AbstractStreamSocket> SocketFactory::createStreamSocket(
     NatTraversalSupport natTraversalSupport,
     std::optional<int> ipVersion)
 {
+    qDebug() << "SocketFactory::createStreamSocket";
     return createStreamSocketFunc(
         std::move(adapterFunc), sslRequired, natTraversalSupport, ipVersion);
 }

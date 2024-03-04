@@ -276,6 +276,7 @@ QnMediaResourceWidget::QnMediaResourceWidget(
     m_objectTrackingButtonController(new ObjectTrackingButtonController(this)),
     m_toggleImageEnhancementAction(new QAction(this))
 {
+    qDebug() << "KHOI TAO QnMediaResourceWidget::QnMediaResourceWidget";
     NX_ASSERT(d->mediaResource, "Media resource widget was created with a non-media resource.");
     d->isExportedLayout = layoutResource()->isFile();
     d->isPreviewSearchLayout = layoutResource()->isPreviewSearchLayout();
@@ -571,6 +572,7 @@ void QnMediaResourceWidget::initRenderer()
 
 void QnMediaResourceWidget::initDisplay()
 {
+    qDebug() << "QnMediaResourceWidget::initDisplay";
     const auto zoomTargetWidget = dynamic_cast<QnMediaResourceWidget *>(this->zoomTargetWidget());
     setDisplay(zoomTargetWidget
         ? zoomTargetWidget->display()

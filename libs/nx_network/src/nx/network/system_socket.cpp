@@ -155,6 +155,7 @@ template<typename SocketInterfaceToImplement>
 bool Socket<SocketInterfaceToImplement>::bind(const SocketAddress& localAddress)
 {
     const SystemSocketAddress addr(localAddress, m_ipVersion);
+
     if (!addr.get())
         return false;
 
@@ -634,7 +635,7 @@ bool CommunicatingSocket<SocketInterfaceToImplement>::connect(
     qDebug() << nx::format("KHOI CommunicatingSocket<SocketInterfaceToImplement>::connect %1").arg(remoteAddress);
     if (remoteAddress.address.isIpAddress())
     {
-        qDebug() << "CommunicatingSocket<SocketInterfaceToImplement>::connect 1";
+        qDebug() << nx::format("connectToIp: %1").arg(remoteAddress);
         return connectToIp(remoteAddress, timeout);
     }
     auto resolvedEntries = SocketGlobals::addressResolver().resolveSync(
@@ -648,7 +649,7 @@ bool CommunicatingSocket<SocketInterfaceToImplement>::connect(
 
     while (!resolvedAddresses.empty())
     {
-        qDebug() << "CommunicatingSocket<SocketInterfaceToImplement>::connect 3";
+        qDebug() << nx::format("CommunicatingSocket<SocketInterfaceToImplement>::connect 3      %1").arg(remoteAddress.port);
         auto ip = std::move(resolvedAddresses.front());
         resolvedAddresses.pop_front();
         if (connectToIp(SocketAddress(std::move(ip), remoteAddress.port), timeout))
@@ -760,7 +761,6 @@ int CommunicatingSocket<SocketInterfaceToImplement>::recv(
 //    QString str = QString::fromUtf8(charBuffer, static_cast<int>(bufferLen));
 
 //    qDebug() << "Buffer contents as QString: " << str;
-      qDebug() << "KHOI CommunicatingSocket<SocketInterfaceToImplement>::recv" << bytesRead;
     return bytesRead;
 }
 
@@ -768,8 +768,8 @@ template<typename SocketInterfaceToImplement>
 int CommunicatingSocket<SocketInterfaceToImplement>::send(
     const void* buffer, std::size_t bufferLen)
 {
-//    const char* bytes = static_cast<const char*>(buffer);
-    qDebug() << "SEND TO SOCKET: %1" << bufferLen;
+    const char* bytes = static_cast<const char*>(buffer);
+    qDebug() << nx::format("SEND TO SOCKET: %1").arg(bytes);
 //    for (std::size_t i = 0; i < bufferLen; i++) {
 //            std::cout <<  bytes[i];
 //        }
@@ -905,25 +905,41 @@ bool CommunicatingSocket<SocketInterfaceToImplement>::connectToIp(
 
     const SystemSocketAddress addr(remoteAddress, this->m_ipVersion);
     if (!addr.get())
+    {
+        qDebug() << "None ADDRESS";
         return false;
+    }
 
     //switching to non-blocking mode to connect with timeout
     bool isNonBlockingModeBak = false;
     if (!this->getNonBlockingMode(&isNonBlockingModeBak))
+    {
+        qDebug() << "getNonBlockingMode";
         return false;
+    }
     if (!isNonBlockingModeBak && !this->setNonBlockingMode(true))
+    {
+        qDebug() << "isNonBlockingModeBak";
         return false;
+    }
 
     NX_ASSERT(addr.get()->sa_family == this->m_ipVersion);
-
+    qDebug() << nx::format("CommunicatingSocket<SocketInterfaceToImplement>::connectToIp %1 %2").args(addr.get()->sa_family, addr.get()->sa_data);
     int connectResult = ::connect(this->m_fd, addr.get(), addr.length());
+    qDebug() << "CommunicatingSocket<SocketInterfaceToImplement>::connectToIp TIEN HANH CONNECT SOCKET";
     if (connectResult != 0)
     {
         auto errorCode = SystemError::getLastOSErrorCode();
         if (errorCode != SystemError::inProgress)
+        {
+            qDebug() << "CommunicatingSocket<SocketInterfaceToImplement>::connectToIp errorCode != SystemError::inProgress";
             return false;
+        }
         if (isNonBlockingModeBak)
+        {
+            qDebug() << "CommunicatingSocket<SocketInterfaceToImplement>::connectToIp async connect started";
             return true;        //async connect started
+        }
     }
 
     SystemError::ErrorCode connectErrorCode = SystemError::noError;
@@ -1036,7 +1052,7 @@ bool CommunicatingSocket<SocketInterfaceToImplement>::connectToIp(
 
     NX_VERBOSE(this, "Connect to %1 completed with result %2",
         remoteAddress, SystemError::toString(connectErrorCode));
-
+    qDebug() << nx::format("Connect to %1 completed with result %2").args(remoteAddress, SystemError::toString(connectErrorCode));
     return m_connected;
 }
 

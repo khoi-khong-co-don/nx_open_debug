@@ -33,13 +33,13 @@ public:
         ReceiveMode receiveMode,
         Role role,
         FrameType frameType,
-        network::websocket::CompressionType compressionType);
+        network::websocket::CompressionType compressionType, int port = 7001);
 
     WebSocket(
         std::unique_ptr<AbstractStreamSocket> streamSocket,
         Role role,
         FrameType frameType,
-        network::websocket::CompressionType compressionType);
+        network::websocket::CompressionType compressionType,  int port = 7001);
 
     ~WebSocket();
 
@@ -88,7 +88,9 @@ private:
         UserReadContext(IoCompletionHandler handler, nx::Buffer* const bufferPtr):
             handler(std::move(handler)),
             bufferPtr(bufferPtr)
-        {}
+        {
+            qDebug() << "UserReadContext(IoCompletionHandler handler, nx::Buffer* const bufferPtr)";
+        }
     };
     using UserReadContextPtr = std::unique_ptr<UserReadContext>;
 

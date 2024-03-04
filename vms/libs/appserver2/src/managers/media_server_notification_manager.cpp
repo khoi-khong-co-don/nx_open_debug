@@ -56,6 +56,7 @@ void QnMediaServerNotificationManager::triggerNotification(
     const QnTransaction<vms::api::StorageDataList>& tran,
     NotificationSource source)
 {
+    qDebug() << "QnMediaServerNotificationManager::triggerNotification(const QnTransaction<vms::api::StorageDataList>& tran,";
     for (const auto& storage: tran.params)
     {
         NX_VERBOSE(
@@ -69,6 +70,7 @@ void QnMediaServerNotificationManager::triggerNotification(
     const QnTransaction<vms::api::StorageData>& tran,
     NotificationSource source)
 {
+    qDebug() << "QnMediaServerNotificationManager::triggerNotification(const QnTransaction<vms::api::StorageData>& tran,";
     NX_ASSERT(tran.command == ApiCommand::saveStorage);
     emit storageChanged(tran.params, source);
 }
@@ -77,6 +79,7 @@ void QnMediaServerNotificationManager::triggerNotification(
     const QnTransaction<vms::api::MediaServerData>& tran,
     NotificationSource source)
 {
+    qDebug() << "QnMediaServerNotificationManager::triggerNotification(const QnTransaction<vms::api::MediaServerData>& tran,";
     NX_ASSERT(tran.command == ApiCommand::saveMediaServer);
     emit addedOrUpdated(tran.params, source);
 }

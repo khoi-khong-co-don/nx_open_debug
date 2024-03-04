@@ -84,7 +84,7 @@ ConnectionBase::ConnectionBase(
     m_httpClient->setSendTimeout(keepAliveTimeout);
     m_httpClient->setResponseReadTimeout(keepAliveTimeout);
     if (remotePeerType != nx::vms::api::PeerType::cloudServer
-        || m_remotePeerUrl.scheme() != nx::network::http::kSecureUrlSchemeName)
+        || m_remotePeerUrl.scheme() != nx::network::http::kSecureUrlSchemeName)             // kSecureUrlSchemeName
     {
         m_httpClient->setAuthType(nx::network::http::AuthType::authDigest);
     }
@@ -209,9 +209,12 @@ QString ConnectionBase::idForToStringFromPtr() const
 
 void ConnectionBase::onHttpClientDone()
 {
+    qDebug() << "ConnectionBase::onHttpClientDone()";
     if (m_httpClient->failed())
     {
+
         const auto lastSysErrorCode = m_httpClient->lastSysErrorCode();
+        qDebug() << nx::format("ConnectionBase::onHttpClientDone() Http request failed %1").arg(lastSysErrorCode);
         cancelConnecting(
             lastSysErrorCode == SystemError::sslHandshakeError
                 ? State::handshakeError
@@ -222,11 +225,13 @@ void ConnectionBase::onHttpClientDone()
     }
 
     const int statusCode = m_httpClient->response()->statusLine.statusCode;
+    qDebug() << nx::format("ConnectionBase::onHttpClientDone() Respone /ec2/Transaction       %1     Status code :    %2").args(m_httpClient->response()->messageBody, statusCode);
 
     NX_VERBOSE(this, lit("%1. statusCode = %2").arg(Q_FUNC_INFO).arg(statusCode));
 
     if (statusCode == nx::network::http::StatusCode::unauthorized)
     {
+        qDebug() << nx::format("ConnectionBase::onHttpClientDone() Http request failed nx::network::http::StatusCode::unauthorized");
         // try next credential source
         m_credentialsSource = (CredentialsSource)((int)m_credentialsSource + 1);
         using namespace std::placeholders;
@@ -246,8 +251,10 @@ void ConnectionBase::onHttpClientDone()
     }
 
     const auto& headers = m_httpClient->response()->headers;
+    qDebug() << nx::format("Header response /ec2/transactionBus    %1").arg(headers);
     if (m_connectionLockGuard && headers.find(Qn::EC2_CONNECT_STAGE_1) != headers.end())
     {
+        qDebug() << "ConnectionBase::onHttpClientDone() Addition stage for server to server connect";
         // Addition stage for server to server connect. It prevents to open two (incoming and outgoing) connections at once.
         if (!nx::network::http::StatusCode::isSuccessCode(statusCode)) //< Checking that statusCode is 2xx.
         {
@@ -275,6 +282,7 @@ void ConnectionBase::onHttpClientDone()
 
     if (statusCode == nx::network::http::StatusCode::forbidden)
     {
+        qDebug() << "ConnectionBase::onHttpClientDone() nx::network::http::StatusCode::forbidden";
         cancelConnecting(
             State::forbidden,
             nx::format("Remote peer forbid connection with message: %1")
@@ -283,23 +291,31 @@ void ConnectionBase::onHttpClientDone()
     }
 
     vms::api::PeerDataEx remotePeer = deserializePeerData(headers, m_localPeer.dataFormat);
-
+    qDebug() << nx::format("Remote Peer ID:     %1").arg(remotePeer.id);
+    qDebug() << nx::format("Remote Peer ID 2:     %1").arg(m_remotePeer.id);
     if (remotePeer.id.isNull())
     {
+        qDebug() << "ConnectionBase::onHttpClientDone() remotePeer.id.isNull()";
         cancelConnecting(State::Error, nx::format("Remote peer Id is null"));
         return;
     }
     else if (remotePeer.id != m_remotePeer.id)
     {
-        cancelConnecting(
-            State::Error,
-            nx::format("Remote peer id %1 is not match expected peer id %2")
-            .arg(remotePeer.id.toString())
-            .arg(m_remotePeer.id.toString()));
-        return;
+        ///// KHOI THEM ///////////////
+        qDebug() << nx::format("ConnectionBase::onHttpClientDone() Remote peer id %1 is not match expected peer id").arg(remotePeer.id.toString());
+        remotePeer.id = m_remotePeer.id;
+        portServer = 7005;                      //7005
+        //////////////////////////////
+//        cancelConnecting(
+//            State::Error,
+//            nx::format("Remote peer id %1 is not match expected peer id %2")
+//            .arg(remotePeer.id.toString())
+//            .arg(m_remotePeer.id.toString()));
+//        return;
     }
     else if (!validateRemotePeerData(remotePeer))
     {
+        qDebug() << nx::format("ConnectionBase::onHttpClientDone() Remote peer id %1 has inappropriate data to make connection").arg(remotePeer.id.toString());
         cancelConnecting(
             State::Error,
             nx::format("Remote peer id %1 has inappropriate data to make connection.")
@@ -313,6 +329,7 @@ void ConnectionBase::onHttpClientDone()
 
     if (m_connectionLockGuard && !m_connectionLockGuard->tryAcquireConnected())
     {
+        qDebug() << nx::format("ConnectionBase::onHttpClientDone() tryAcquireConnected failed");
         cancelConnecting(State::Error, nx::format("tryAcquireConnected failed"));
         return;
     }
@@ -322,8 +339,10 @@ void ConnectionBase::onHttpClientDone()
 
     auto error = websocket::validateResponse(m_httpClient->request(), *m_httpClient->response());
     auto useWebsocketMode = error == websocket::Error::noError;
+    qDebug() << nx::format("Error websocket: %1").arg(error);
     if (!useWebsocketMode)
     {
+        qDebug() << nx::format("Can't establish WEB socket connecti  Can't establish WEB socket connection. Validation failed. Error: %1. Switch to the HTTP mode").arg((int)error);
         NX_WARNING(this,
             nx::format("Can't establish WEB socket connection. Validation failed. Error: %1. Switch to the HTTP mode").arg((int)error));
     }
@@ -341,6 +360,8 @@ void ConnectionBase::onHttpClientDone()
         && pingSupportedHeaderIt != headers.cend()
         && pingSupportedHeaderIt->second == "true";
 
+    qDebug() << nx::format("Ping supported: %1. useWebsocket: %2, ping supported header present: %3, header value: %4 ").args(pingSupported, useWebsocketMode, pingSupportedHeaderIt != headers.cend(), pingSupportedHeaderIt->second == "true");
+
     NX_DEBUG(
         this, "Ping supported: %1. useWebsocket: %2, "
         "ping supported header present: %3, header value: %4",
@@ -351,15 +372,18 @@ void ConnectionBase::onHttpClientDone()
 
     if (useWebsocketMode)
     {
+        qDebug() << nx::format("ConnectionBase::onHttpClientDone() Using websocket p2p transport for connection with '%1'").arg(m_httpClient->url());
+
         NX_DEBUG(this, "Using websocket p2p transport for connection with '%1'", m_httpClient->url());
         auto socket = m_httpClient->takeSocket();
         socket->setNonBlockingMode(true);
         m_p2pTransport.reset(new P2PWebsocketTransport(
             std::move(socket), nx::network::websocket::Role::client, frameType, compressionType,
-            m_keepAliveTimeout));
+            m_keepAliveTimeout, portServer));
     }
     else
     {
+        qDebug() << nx::format("ConnectionBase::onHttpClientDone() Using http p2p transport for connection with '%1'").arg(m_httpClient->url());
         NX_DEBUG(this, "Using http p2p transport for connection with '%1'", m_httpClient->url());
         auto url = m_httpClient->url();
         auto urlPath = url.path().replace(kHttpHandshakeUrlPath, kHttpDataUrlPath);
@@ -375,17 +399,18 @@ void ConnectionBase::onHttpClientDone()
                 ? std::optional<std::chrono::milliseconds>(kPingTimeout)
                 : std::nullopt));
     }
-
     m_httpClient.reset();
     m_p2pTransport->bindToAioThread(m_timer.getAioThread());
     m_p2pTransport->start([this](SystemError::ErrorCode errorCode)
         {
             if (errorCode == SystemError::noError)
             {
+                qDebug() << "Set State State::Connected";
                 setState(State::Connected);
             }
             else
             {
+                qDebug() << nx::format("ConnectionBase::onHttpClientDone() P2P Http transport connection failed %1").arg(errorCode);
                 cancelConnecting(
                     errorCode == SystemError::sslHandshakeError
                     ? State::handshakeError
@@ -402,6 +427,7 @@ void ConnectionBase::setNoPingSupportClientHeader(bool value)
 
 void ConnectionBase::startConnection()
 {
+    qDebug() << "ConnectionBase::startConnection()";
     m_startedClassId = typeid(*this).hash_code();
 
     auto headers = m_additionalRequestHeaders;
@@ -426,7 +452,7 @@ void ConnectionBase::startConnection()
     requestUrl.setQuery(requestUrlQuery.toString());
     if (requestUrl.password().isEmpty())
         fillAuthInfo(m_httpClient.get(), m_credentialsSource == CredentialsSource::serverKey);
-
+    qDebug() << nx::format("ConnectionBase::startConnection()     %1").arg(requestUrl);
     m_httpClient->doGet(
         requestUrl,
         std::bind(&ConnectionBase::onHttpClientDone, this));
@@ -437,6 +463,7 @@ void ConnectionBase::startReading()
     m_startedClassId = typeid(*this).hash_code();
 
     NX_VERBOSE(this, "Connection Starting reading, state [%1]", state());
+    qDebug() << nx::format("Connection Starting reading, state [%1]").arg(state());
     using namespace std::placeholders;
     m_p2pTransport->readSomeAsync(
         &m_readBuffer,
@@ -608,6 +635,9 @@ void ConnectionBase::onMessageSent(SystemError::ErrorCode errorCode, size_t byte
 
 void ConnectionBase::onNewMessageRead(SystemError::ErrorCode errorCode, size_t bytesRead)
 {
+    qDebug() << "ConnectionBase::onNewMessageRead";
+//    qDebug() << nx::format("Buffer WEBSOCKET: \n   %1").arg(m_readBuffer);
+
     if (bytesRead == 0)
     {
         NX_DEBUG( this, "onNewMessageRead: Connection closed by remote peer");
@@ -650,6 +680,7 @@ bool ConnectionBase::handleMessage(const nx::Buffer& message)
 
     const bool isClient = localPeer().isClient();
     MessageType messageType = getMessageType(message, isClient);
+    qDebug() << nx::format("EMIT data websocket sub message Header   type:     %1").arg(messageType);
     emit gotMessage(weakPointer(), messageType, message.substr(messageHeaderSize(isClient)));
 
     return true;

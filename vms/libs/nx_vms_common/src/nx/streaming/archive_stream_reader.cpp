@@ -435,8 +435,9 @@ bool QnArchiveStreamReader::isCompatiblePacketForMask(const QnAbstractMediaDataP
 
 QnAbstractMediaDataPtr QnArchiveStreamReader::getNextData()
 {
+    qDebug() << "QnArchiveStreamReader::getNextData";
     NX_VERBOSE(this, "Next data requested from %1", m_resource);
-
+    qDebug() << nx::format("Next data requested from %1").arg(m_resource);
     while (!m_skippedMetadata.isEmpty())
         return m_skippedMetadata.dequeue();
 

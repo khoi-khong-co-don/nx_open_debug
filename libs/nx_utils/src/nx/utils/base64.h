@@ -6,7 +6,7 @@
 #include <string_view>
 
 #include <QtCore/QByteArray>
-
+#include <QDebug>
 namespace nx::utils {
 
 /**
@@ -94,6 +94,7 @@ inline std::string toBase64Url(const std::string& str)
 
 inline std::string fromBase64(const std::string& str)
 {
+    qDebug() << "Data peerData : "<< fromBase64((std::string_view) str).c_str();
     return fromBase64((std::string_view) str);
 }
 

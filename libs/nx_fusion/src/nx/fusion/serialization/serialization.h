@@ -361,6 +361,7 @@ namespace QnSerialization {
     template<class Context, class T, class D>
     bool deserialize(Context *ctx, const D &value, T *target) {
         NX_ASSERT(ctx && target);
+
         return QnSerializationDetail::deserialize_internal(ctx, value, target);
     }
 

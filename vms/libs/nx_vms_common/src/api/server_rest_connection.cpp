@@ -486,6 +486,7 @@ Handle ServerConnection::getModuleInformation(
     Result<RestResultWithData<nx::vms::api::ModuleInformation>>::type callback,
     QThread* targetThread)
 {
+    qDebug() << "Handle ServerConnection::getModuleInformation";
     nx::network::rest::Params params;
     return executeGet("/api/moduleInformation", params, callback, targetThread);
 }
@@ -494,6 +495,7 @@ Handle ServerConnection::getModuleInformationAll(
     Result<RestResultWithData<QList<nx::vms::api::ModuleInformation>>>::type callback,
     QThread* targetThread)
 {
+    qDebug() << "Handle ServerConnection::getModuleInformationAll";
     nx::network::rest::Params params;
     params.insert("allModules", lit("true"));
     return executeGet("/api/moduleInformation", params, callback, targetThread);

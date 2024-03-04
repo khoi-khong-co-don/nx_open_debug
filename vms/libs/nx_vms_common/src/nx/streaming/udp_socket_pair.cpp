@@ -21,8 +21,12 @@ bool UdpSocketPair::bind()
     auto bindSocket = [](int port)
     {
         auto socket = nx::network::SocketFactory::createDatagramSocket();
+        qDebug() << nx::format("UdpSocketPair::bind port muon bind:    %1    %2").args(nx::network::HostAddress::anyHost,port);
         if (socket->bind(nx::network::SocketAddress(nx::network::HostAddress::anyHost, port)))
+        {
+            qDebug() << "UdpSocketPair::bind bind socket success";
             return socket;
+        }
         return std::unique_ptr<nx::network::AbstractDatagramSocket>();
     };
 
@@ -45,7 +49,11 @@ bool UdpSocketPair::bind()
         port += 2;
         mediaSocket = bindSocket(port);
         if (mediaSocket)
+        {
+            qDebug() << nx::format("PORT SOCKET MEDIA: %1").arg(port);
             rtcpSocket = bindSocket(port + 1);
+            qDebug() << nx::format("PORT SOCKET RTCP: %1").arg(port+1);
+        }
     }
 
     if (!rtcpSocket)

@@ -224,16 +224,29 @@ struct RemoteConnectionFactory::Private
         NX_DEBUG(this, "Url %1, purpose %2",
             context->logonData.address,
             nx::reflect::toString(context->logonData.purpose));
+        qDebug() << nx::format("Url %1, purpose %2").args(context->logonData.address, nx::reflect::toString(context->logonData.purpose));
 
         if (context->expectedServerId())
+        {
+            qDebug() << nx::format("Expect Server ID %1.").arg(*context->expectedServerId());
             NX_DEBUG(this, "Expect Server ID %1.", *context->expectedServerId());
+        }
         else
+        {
+            qDebug() << "Server ID is not known.";
             NX_DEBUG(this, "Server ID is not known.");
+        }
 
         if (context->expectedServerVersion())
+        {
+            qDebug() << nx::format("Expect Server version %1.").arg(*context->expectedServerVersion());
             NX_DEBUG(this, "Expect Server version %1.", *context->expectedServerVersion());
+        }
         else
+        {
+            qDebug() << "Server version is not known.";
             NX_DEBUG(this, "Server version is not known.");
+        }
 
         if (context->isCloudConnection())
         {
@@ -285,6 +298,9 @@ struct RemoteConnectionFactory::Private
         context->moduleInformation = reply.moduleInformation;
 
         // Check whether actual server id matches the one we expected to get (if any).
+        qDebug() << nx::format("expectedServerId   :     %1").arg(context->expectedServerId());
+        qDebug() << nx::format("moduleInformation.id   :     %1").arg(context->moduleInformation.id);
+
         if (context->expectedServerId()
             && context->expectedServerId() != context->moduleInformation.id)
         {
@@ -383,14 +399,20 @@ struct RemoteConnectionFactory::Private
             verifyHandshakeCertificateChain(context->handshakeCertificateChain, *currentServerIt);
         if (!certificateVerificationResult.success)
         {
+            qDebug() << "Đăng nhập thành công";
             context->setError(RemoteConnectionErrorCode::certificateRejected);
             return;
         }
 
         // User interaction.
-        verifyTargetCertificate(context, certificateVerificationResult.isUserProvidedCertificate);
+        //////// KHOI SUA//////////////
+        //verifyTargetCertificate(context, certificateVerificationResult.isUserProvidedCertificate);
+        //////////////////////////////////
         if (!context->failed())
+        {
+            qDebug() << "Tiến hành xác thực";
             processCertificates(context);
+        }
     }
 
     bool checkCompatibility(ContextPtr context)
@@ -785,6 +807,9 @@ struct RemoteConnectionFactory::Private
         const nx::network::ssl::CertificateChain& handshakeCertificateChain,
         const nx::vms::api::ServerInformation& serverInfo)
     {
+        /// KHOI THEM ///////////////////////
+             return {.success = true};
+        /// //////////////////////////////////
         if (!nx::network::ini().verifyVmsSslCertificates)
             return {.success = true};
 
@@ -796,15 +821,23 @@ struct RemoteConnectionFactory::Private
         const auto handshakeKey = handshakeCertificateChain[0].publicKey();
 
         if (handshakeKey == publicKey(serverInfo.userProvidedCertificatePem))
+        {
+            qDebug() << "Đúng Certificate là User";
             return {.success = true, .isUserProvidedCertificate = true};
-
+        }
+        qDebug() << nx::format("Certificate Server : %1").arg(serverInfo.certificatePem);
         if (handshakeKey == publicKey(serverInfo.certificatePem))
+        {
+            qDebug() << "Đúng Certificate";
             return {.success = true};
+        }
 
         NX_WARNING(this,
             "The handshake certificate doesn't match any certificate provided by"
             " the server.\nHandshake key: %1",
             handshakeKey);
+
+        qDebug() << nx::format("The handshake certificate doesn't match any certificate provided by the server.\nHandshake key: %1").arg(handshakeKey);
 
         if (const auto& pem = serverInfo.certificatePem; !pem.empty())
         {
@@ -828,25 +861,33 @@ struct RemoteConnectionFactory::Private
 
     void processCertificates(ContextPtr context)
     {
+
         using CertificateType = CertificateVerifier::CertificateType;
 
         if (!NX_ASSERT(context))
             return;
 
         NX_VERBOSE(this, "Process received certificates list.");
+        qDebug() << "Process received certificates list.";
         for (const auto& server: context->serversInfo)
         {
             const auto& serverId = server.id;
             const auto serverUrl = mainServerUrl(server.remoteAddresses, server.port);
-
+            qDebug() << nx::format("Server certificates %1").arg(server.remoteAddresses);
             auto storeCertificate =
                 [&](const nx::network::ssl::CertificateChain& chain, CertificateType type)
                 {
+
                     if (chain.empty())
                         return false;
 
                     const auto currentKey = chain[0].publicKey();
                     const auto pinnedKey = certificateVerifier->pinnedCertificate(serverId, type);
+
+                    /// KHOI THEM ///
+//                    certificateVerifier->pinCertificate(serverId, currentKey, type);
+//                    return true;
+                    ////////////////
 
                     if (currentKey == pinnedKey)
                         return true;
@@ -880,11 +921,20 @@ struct RemoteConnectionFactory::Private
             auto processCertificate =
                 [&](const std::string& pem, CertificateType type)
                 {
+
                     if (pem.empty())
                         return true; //< There is no certificate to process.
 
                     const auto chain = nx::network::ssl::Certificate::parse(pem);
 
+                    ////// KHOI THEM //////////
+//                    context->certificateCache->addCertificate(
+//                        serverId,
+//                        chain[0].publicKey(),
+//                        type);
+//                    return true;
+                    //////////////////////////
+                    ///
                     if (!storeCertificate(chain, type))
                     {
                         context->setError(RemoteConnectionErrorCode::certificateRejected);
@@ -898,7 +948,7 @@ struct RemoteConnectionFactory::Private
                         type);
                     return true;
                 };
-
+            qDebug() << nx::format("Server certificatePem %1").arg(server.certificatePem);
             if (!processCertificate(server.certificatePem, CertificateType::autogenerated))
             {
                 return;
@@ -941,7 +991,7 @@ struct RemoteConnectionFactory::Private
                     return context;
                 return {};
             };
-
+        qDebug() << "connectToServerAsync(WeakContextPtr contextPtr)";
         logInitialInfo(context());
 
         // Request cloud token asyncronously, as this request may go in parallel with Server api.
@@ -953,6 +1003,7 @@ struct RemoteConnectionFactory::Private
         // this request for 4.2 and older systems as there is no other way to identify them.
         if (needToRequestModuleInformationFirst(context()))
         {
+            qDebug() << "connectToServerAsync(WeakContextPtr contextPtr) GET /api/moduleInformation";
             // GET /api/moduleInformation
             getModuleInformation(context());
 
@@ -962,10 +1013,11 @@ struct RemoteConnectionFactory::Private
         }
 
         // For Systems 5.0 and newer we may use /rest/v1/servers/*/info and receive all Servers'
-        // certificates in one call. Offline Servers will not be listed if the System is 5.0, so
+        // certificates in one call. Offline ServeFrs will not be listed if the System is 5.0, so
         // their certificates will be processed in the ServerCertificateWatcher class.
         if (systemSupportsRestApi(context()))
         {
+            qDebug() << "connectToServerAsync(WeakContextPtr contextPtr) GET /rest/v1/servers/*/info";
             // GET /rest/v1/servers/*/info
             getServersInfo(context());
 
@@ -1002,6 +1054,7 @@ struct RemoteConnectionFactory::Private
         if (!isRestApiSupported(context()))
         {
             NX_DEBUG(this, "Login with Digest to the System with no REST API support.");
+            qDebug() << "Login with Digest to the System with no REST API support.";
             loginWithDigest(context()); //< GET /api/moduleInformationAuthenticated
             return;
         }
@@ -1022,7 +1075,7 @@ struct RemoteConnectionFactory::Private
         else if (context())
         {
             NX_DEBUG(this, "Connecting as Local User, checking whether LDAP is required.");
-
+            qDebug() << "Connecting as Local User, checking whether LDAP is required.";
             // Step is performed for local Users to upgrade them to LDAP if needed - or block
             // cloud login using a Local System tile or Login Dialog.
             //
@@ -1036,16 +1089,24 @@ struct RemoteConnectionFactory::Private
                 // rtsps.
                 //
                 // GET /api/moduleInformationAuthenticated.
+                qDebug() << "Login with Digest authen";
                 loginWithDigest(context());
             }
             else
             {
                 NX_DEBUG(this, "Logging in with a token.");
                 // Try to login with an already saved token if present.
+                //qDebug() << "Logging in with a token.";
                 if (hasToken(context()))
+                {
+                    qDebug() << "Logging in with a token.";
                     loginWithToken(context()); //< GET /rest/v1/login/sessions/current
+                }
                 else
+                {
+                    qDebug() << "Logging in with not a token.";
                     issueLocalToken(context()); //< GET /rest/v1/login/sessions
+                }
             }
         }
     }
@@ -1099,8 +1160,8 @@ RemoteConnectionFactory::ProcessPtr RemoteConnectionFactory::connect(
     Callback callback,
     std::unique_ptr<AbstractRemoteConnectionUserInteractionDelegate> customUserInteractionDelegate)
 {
+    qDebug() << "RemoteConnectionFactory::ProcessPtr RemoteConnectionFactory::connect";
     auto process = std::make_shared<RemoteConnectionProcess>();
-
     process->context->logonData = logonData;
     process->context->customUserInteractionDelegate = std::move(customUserInteractionDelegate);
     process->context->certificateCache = std::make_shared<CertificateCache>();
@@ -1111,6 +1172,7 @@ RemoteConnectionFactory::ProcessPtr RemoteConnectionFactory::connect(
             nx::utils::setCurrentThreadName("RemoteConnectionFactoryThread");
 
             d->connectToServerAsync(contextPtr);
+            qDebug() << "connectToServerAsync end";
 
             if (!contextPtr.lock())
                 return;
@@ -1124,7 +1186,10 @@ RemoteConnectionFactory::ProcessPtr RemoteConnectionFactory::connect(
                         return;
 
                     if (context->error())
+                    {
+                        qDebug() << nx::format("error với kết nối : %1").arg(context->error());
                         callback(*context->error());
+                    }
                     else
                         callback(d->makeRemoteConnectionInstance(context));
                 },

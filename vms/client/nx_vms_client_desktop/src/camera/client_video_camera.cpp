@@ -173,7 +173,7 @@ void QnClientVideoCamera::exportMediaPeriodToFile(const QnTimePeriod &timePeriod
         // In the case of AVI, it is required to add filtering.
         if (fileName.toLower().endsWith(".avi"))
             archiveReader->addMediaFilter(std::make_shared<H2645Mp4ToAnnexB>());
-
+        qDebug() << "Tao QnRtspClientArchiveDelegate 1";
         QnRtspClientArchiveDelegate* rtspClient = dynamic_cast<QnRtspClientArchiveDelegate*> (archiveReader->getArchiveDelegate());
         if (rtspClient) {
             // 'slow' open mode. send DESCRIBE and SETUP to server.

@@ -81,6 +81,7 @@ QnCommonMessageProcessor::QnCommonMessageProcessor(
 
 void QnCommonMessageProcessor::init(const ec2::AbstractECConnectionPtr& connection)
 {
+    qDebug() << "QnCommonMessageProcessor::init(const ec2::AbstractECConnectionPtr& connection)";
     if (m_connection)
     {
         // Safety check in case connection will not be deleted instantly.
@@ -113,6 +114,7 @@ void QnCommonMessageProcessor::connectToConnection(const ec2::AbstractECConnecti
     const auto on_resourceUpdated =
         [this](const auto& resource, ec2::NotificationSource source)
         {
+            qDebug() << "Update Resource ở đây";
             updateResource(resource, source);
         };
 
@@ -193,6 +195,11 @@ void QnCommonMessageProcessor::connectToConnection(const ec2::AbstractECConnecti
         &QnCommonMessageProcessor::on_resourceStatusRemoved,
         connectionType);
 
+
+
+
+
+
     const auto mediaServerManager = connection->mediaServerNotificationManager();
     connect(
         mediaServerManager.get(),
@@ -230,6 +237,10 @@ void QnCommonMessageProcessor::connectToConnection(const ec2::AbstractECConnecti
         this,
         &QnCommonMessageProcessor::on_mediaServerUserAttributesRemoved,
         connectionType);
+
+
+
+
 
     const auto cameraManager = connection->cameraNotificationManager();
     connect(
@@ -275,6 +286,10 @@ void QnCommonMessageProcessor::connectToConnection(const ec2::AbstractECConnecti
         &QnCommonMessageProcessor::on_resourceRemoved,
         connectionType);
 
+
+
+
+
     const auto userManager = connection->userNotificationManager();
     connect(
         userManager.get(),
@@ -307,6 +322,10 @@ void QnCommonMessageProcessor::connectToConnection(const ec2::AbstractECConnecti
         &QnCommonMessageProcessor::on_userRoleRemoved,
         connectionType);
 
+
+
+
+
     const auto layoutManager = connection->layoutNotificationManager();
     connect(
         layoutManager.get(),
@@ -320,6 +339,9 @@ void QnCommonMessageProcessor::connectToConnection(const ec2::AbstractECConnecti
         this,
         &QnCommonMessageProcessor::on_resourceRemoved,
         connectionType);
+
+
+
 
     const auto videowallManager = connection->videowallNotificationManager();
     connect(
@@ -340,6 +362,10 @@ void QnCommonMessageProcessor::connectToConnection(const ec2::AbstractECConnecti
         this,
         &QnCommonMessageProcessor::videowallControlMessageReceived,
         connectionType);
+
+
+
+
 
     const auto webPageManager = connection->webPageNotificationManager();
     connect(
@@ -475,6 +501,10 @@ void QnCommonMessageProcessor::connectToConnection(const ec2::AbstractECConnecti
         &QnLayoutTourManager::removeTour,
         connectionType);
 
+
+
+
+
     const auto analyticsManager = connection->analyticsNotificationManager();
     connect(
         analyticsManager.get(),
@@ -523,6 +553,7 @@ void QnCommonMessageProcessor::disconnectFromConnection(const ec2::AbstractECCon
 
 void QnCommonMessageProcessor::on_gotInitialNotification(const FullInfoData& fullData)
 {
+    qDebug() << "QnCommonMessageProcessor::on_gotInitialNotification";
     onGotInitialNotification(fullData);
 
     // TODO: #sivanov Logic is not perfect, who will clean them on disconnect?
@@ -582,12 +613,14 @@ void QnCommonMessageProcessor::on_gotDiscoveryData(
 
 void QnCommonMessageProcessor::on_remotePeerFound(QnUuid data, PeerType peerType)
 {
+    qDebug() << "QnCommonMessageProcessor::on_remotePeerFound(QnUuid data, PeerType peerType)";
     handleRemotePeerFound(data, peerType);
     emit remotePeerFound(data, peerType);
 }
 
 void QnCommonMessageProcessor::on_remotePeerLost(QnUuid data, PeerType peerType)
 {
+    qDebug() << "QnCommonMessageProcessor::on_remotePeerLost";
     handleRemotePeerLost(data, peerType);
     emit remotePeerLost(data, peerType);
 }
@@ -833,6 +866,7 @@ void QnCommonMessageProcessor::resetResources(const FullInfoData& fullData)
 
     const auto updateResources = [this, &remoteResources](const auto& source)
         {
+            qDebug() << "updateResources fulldata";
             for (const auto& resource: source)
             {
                 updateResource(resource, ec2::NotificationSource::Remote);
@@ -842,16 +876,24 @@ void QnCommonMessageProcessor::resetResources(const FullInfoData& fullData)
 
     // Packet adding.
     resourcePool()->beginTran();
-
+    //// KHOI THEM //////////////
+    //qDebug() << nx::format(" Full Data ").arg();
     updateResources(fullData.users);
     updateResources(fullData.cameras);
-    updateResources(fullData.layouts);
-    updateResources(fullData.videowalls);
-    updateResources(fullData.webPages);
     updateResources(fullData.servers);
-    updateResources(fullData.storages);
-    updateResources(fullData.analyticsPlugins);
-    updateResources(fullData.analyticsEngines);
+    ///////////////////////////////////
+
+
+//    updateResources(fullData.users);
+//    updateResources(fullData.cameras);
+//    updateResources(fullData.layouts);
+//    updateResources(fullData.videowalls);
+//    updateResources(fullData.webPages);
+//    updateResources(fullData.servers);
+//    updateResources(fullData.storages);
+//    updateResources(fullData.analyticsPlugins);
+//    updateResources(fullData.analyticsEngines);
+
 
     resourcePool()->commit();
 
@@ -1002,6 +1044,7 @@ void QnCommonMessageProcessor::resetStatusList(const ResourceStatusDataList& par
 
 void QnCommonMessageProcessor::onGotInitialNotification(const FullInfoData& fullData)
 {
+    qDebug() << "QnCommonMessageProcessor::onGotInitialNotification";
     m_context->resourceAccessManager()->beginUpdate();
     m_context->resourceAccessProvider()->beginUpdate();
     m_context->analyticsTaxonomyStateWatcher()->beginUpdate();
@@ -1023,7 +1066,6 @@ void QnCommonMessageProcessor::onGotInitialNotification(const FullInfoData& full
     m_context->analyticsTaxonomyStateWatcher()->endUpdate();
     m_context->resourceAccessProvider()->endUpdate();
     m_context->resourceAccessManager()->endUpdate();
-
     emit initialResourcesReceived();
 }
 
@@ -1037,6 +1079,7 @@ void QnCommonMessageProcessor::updateResource(
     const nx::vms::api::UserData& user,
     ec2::NotificationSource source)
 {
+    qDebug() << "QnCommonMessageProcessor::updateResource(const nx::vms::api::UserData& user,ec2::NotificationSource source)";
     QnUserResourcePtr qnUser(ec2::fromApiToResource(user));
     updateResource(qnUser, source);
 }
@@ -1143,6 +1186,7 @@ void QnCommonMessageProcessor::updateResource(
 
 void QnCommonMessageProcessor::updateResource(const CameraData& camera, ec2::NotificationSource source)
 {
+    qDebug() << "QnCommonMessageProcessor::updateResource(const CameraData& camera, ec2::NotificationSource source)";
     QnVirtualCameraResourcePtr qnCamera = getResourceFactory()->createResource(camera.typeId,
             QnResourceParams(camera.id, camera.url, camera.vendor))
         .dynamicCast<QnVirtualCameraResource>();
@@ -1189,6 +1233,7 @@ void QnCommonMessageProcessor::updateResource(
     QnStorageResourcePtr qnStorage = getResourceFactory()->createResource(
         StorageData::kResourceTypeId,
         QnResourceParams(storage.id, storage.url, QString())).dynamicCast<QnStorageResource>();
+    qDebug() << nx::format("ID Storage:    %1     URL :     %2").args(storage.id, storage.url);
     if (qnStorage)
     {
         ec2::fromApiToResource(storage, qnStorage);

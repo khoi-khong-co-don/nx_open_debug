@@ -85,6 +85,7 @@ MessageBus::MessageBus(
     TransactionMessageBusBase(peerType, commonModule, jsonTranSerializer, ubjsonTranSerializer),
     m_miscData(this)
 {
+    qDebug() << "MessageBus::MessageBus";
     static const int kMetaTypeRegistrator =
         []()
         {
@@ -208,6 +209,7 @@ void MessageBus::addOutgoingConnectionToPeer(
     deleteRemoveUrlById(peer);
 
     nx::utils::Url url(_url);
+    qDebug() << nx::format("MessageBus::addOutgoingConnectionToPeer    %1").arg(url);
     const auto patch = globalSettings()->isWebSocketEnabled()
         ? ConnectionBase::kWebsocketUrlPath : ConnectionBase::kHttpHandshakeUrlPath;
     if (peerType == nx::vms::api::PeerType::cloudServer)
@@ -227,6 +229,7 @@ void MessageBus::addOutgoingConnectionToPeer(
     NX_VERBOSE(this, "peer %1 addOutgoingConnection to peer %2 type %3 using url \"%4\"",
         peerName(localPeer().id),
         peerName(peer), peerType, _url);
+    qDebug() << nx::format("peer %1 addOutgoingConnection to peer %2 type %3 using url \"%4\"").args(peerName(localPeer().id),peerName(peer), peerType, _url);
     executeInThread(m_thread, [this]() {doPeriodicTasks();});
 }
 
@@ -293,6 +296,7 @@ void MessageBus::connectSignals(const P2pConnectionPtr& connection)
 void MessageBus::createOutgoingConnections(
     const QMap<PersistentIdData, P2pConnectionPtr>& currentSubscription)
 {
+    qDebug() << "MessageBus::createOutgoingConnections";
     if (hasStartingConnections())
         return;
 
@@ -347,7 +351,7 @@ void MessageBus::createOutgoingConnections(
                 connectionGuardSharedState(),
                 remoteConnection.peerId,
                 ConnectionLockGuard::Direction::Outgoing);
-
+            qDebug() << nx::format(" MessageBus::createOutgoingConnections   %1").arg(remoteConnection.url);
             P2pConnectionPtr connection(new Connection(
                 remoteConnection.adapterFunc,
                 remoteConnection.credentials,
@@ -448,6 +452,7 @@ void MessageBus::MiscData::update()
 
 void MessageBus::doPeriodicTasks()
 {
+    qDebug() << "MessageBus::doPeriodicTasks()";
     NX_MUTEX_LOCKER lock(&m_mutex);
     if (!isStarted())
     {
@@ -479,7 +484,9 @@ vms::api::PeerDataEx MessageBus::localPeerEx() const
 
 void MessageBus::startReading(P2pConnectionPtr connection)
 {
+    qDebug() << "MessageBus::startReading    encode";
     context(connection)->encode(PersistentIdData(connection->remotePeer()), 0);
+    qDebug() << "MessageBus::startReading    start reading";
     connection->startReading();
 }
 
@@ -559,9 +566,11 @@ void MessageBus::at_stateChanged(
         case Connection::State::Connected:
             if (connection->direction() == Connection::Direction::outgoing)
             {
+                qDebug()<< "MessageBus::at_stateChanged Connection::State::Connected";
                 m_connections[remoteId] = connection;
                 m_outgoingConnections.remove(remoteId);
                 emitPeerFoundLostSignals();
+                qDebug() << "MessageBus::at_stateChanged start reading";
                 startReading(connection);
             }
 
@@ -628,17 +637,25 @@ void MessageBus::at_gotMessage(
         return;
 
     const auto& payload = payloadBuffer.toByteArray();
-
     NX_MUTEX_LOCKER lock(&m_mutex);
 
     if (!isStarted())
+    {
+        qDebug() << "MessageBus::at_gotMessage not Started ";
         return;
+    }
 
-    if (m_connections.value(connection->remotePeer().id) != connection)
+    if (m_connections.value(connection->remotePeer().id) !=   connection)
+    {
+        qDebug() << "MessageBus::at_gotMessage not connection ";
         return;
+    }
 
     if (connection->state() == Connection::State::Error)
+    {
+        qDebug() << "MessageBus::at_gotMessage Error ";
         return; //< Connection has been closed
+    }
     if (nx::utils::log::isToBeLogged(nx::utils::log::Level::verbose, this) &&
         messageType != MessageType::pushTransactionData &&
         messageType != MessageType::pushTransactionList)
@@ -652,8 +669,10 @@ void MessageBus::at_gotMessage(
             peerName(connection->remotePeer().id),
             messageType,
             payload.size() + 1);
+        qDebug() << nx::format("Got message:\t %1 <--- %2. Type: %3. Size=%4").args(localPeerName, peerName(connection->remotePeer().id), messageType,payload.size() + 1 );
     }
-
+    qDebug() << nx::format("Got message:\t <--- %2. Type: %3. Size=%4").args(peerName(connection->remotePeer().id), messageType,payload.size() + 1 );
+    qDebug() << "MessageBus::at_gotMessage connection context";
     bool result = false;
     auto connectionContext = this->context(connection);
     switch (messageType)
@@ -835,6 +854,7 @@ bool MessageBus::handlePeersMessage(const P2pConnectionPtr& connection, const QB
                 shortPeers.decode(peer.peerNumber),
                 nx::p2p::RoutingRecord(distance, firstVia));
         }
+        qDebug() << "MessageBus::handlePeersMessage";
         emitPeerFoundLostSignals();
         return true;
     }
@@ -1157,6 +1177,7 @@ void MessageBus::gotTransaction(
     const TransportHeader& transportHeader,
     nx::Locker<nx::Mutex>* lock)
 {
+    qDebug() << "void MessageBus::gotTransaction(const QnTransaction<nx::vms::api::RuntimeData>& tran";
     if (localPeer().isServer() && !isSubscribedTo(connection->remotePeer()))
         return; // Ignore deprecated transaction.
 
@@ -1180,9 +1201,11 @@ void MessageBus::gotTransaction(
 
     if (m_handler)
     {
+        qDebug() << nx::format("DATA Trans: %1").arg(tran.command);
         nx::Unlocker<nx::Mutex> unlock(lock);
         m_handler->triggerNotification(tran, NotificationSource::Remote);
     }
+    qDebug() << "MessageBus::gotTransaction emitPeerFoundLostSignals";
     emitPeerFoundLostSignals();
     // Proxy transaction to subscribed peers
     sendTransaction(tran, transportHeader);
@@ -1280,16 +1303,19 @@ bool MessageBus::handlePushTransactionData(
     // Workaround for compatibility with server 3.1/3.2 with p2p mode on
     // It could send subscribeForDataUpdates binary message among json data.
     // TODO: we have to remove this checking in 4.0 because it is fixed on server side.
+    qDebug() << "bool MessageBus::handlePushTransactionData";
     if (localPeerEx().dataFormat == Qn::JsonFormat && !serializedTran.isEmpty()
         && serializedTran[0] == (quint8)MessageType::subscribeForDataUpdates)
     {
+        qDebug() << "MessageBus::handlePushTransactionData error";
         return true; //< Ignore binary message
     }
-
+    qDebug() << "MessageBus::handlePushTransactionData 2";
     using namespace std::placeholders;
+    /// Server Oryza là JsonFormat
     return handleTransaction(
         this,
-        connection->localPeer().dataFormat,
+        connection->localPeer().dataFormat,                          //Qn::JsonFormat                        //connection->localPeer().dataFormat
         std::move(serializedTran),
         std::bind(GotTransactionFuction(), this, _1, connection, header, lock),
         [](Qn::SerializationFormat, const QnAbstractTransaction&, const QByteArray&) { return false; });
@@ -1494,24 +1520,26 @@ void MessageBus::emitPeerFoundLostSignals()
             peerName(peer.id));
         emitAsync(this, &MessageBus::peerFound, peer.id, peer.peerType);
     }
+    // KHOI THEM /////
+//    for (const auto& peer: lostPeers)
+//    {
+//        cleanupRuntimeInfo(peer);
 
-    for (const auto& peer: lostPeers)
-    {
-        cleanupRuntimeInfo(peer);
+//        vms::api::PeerData samePeer(PersistentIdData(peer.id, QnUuid()), peer.peerType);
+//        auto samePeerItr = newAlivePeers.lower_bound(samePeer);
+//        bool hasSimilarPeer = samePeerItr != newAlivePeers.end() && samePeerItr->id == peer.id;
 
-        vms::api::PeerData samePeer(PersistentIdData(peer.id, QnUuid()), peer.peerType);
-        auto samePeerItr = newAlivePeers.lower_bound(samePeer);
-        bool hasSimilarPeer = samePeerItr != newAlivePeers.end() && samePeerItr->id == peer.id;
-        if (!hasSimilarPeer)
-        {
-            NX_DEBUG(this,
-                "Peer %1 has lost peer %2",
-                peerName(localPeer().id),
-                peerName(peer.id));
-            emitAsync(this, &MessageBus::peerLost, peer.id, peer.peerType);
-            sendRuntimeInfoRemovedToClients(peer.id);
-        }
-    }
+//        if (!hasSimilarPeer)
+//        {
+//            qDebug() << "MessageBus::emitPeerFoundLostSignals() peerLost";
+//            NX_DEBUG(this,
+//                "Peer %1 has lost peer %2",
+//                peerName(localPeer().id),
+//                peerName(peer.id));
+//            emitAsync(this, &MessageBus::peerLost, peer.id, peer.peerType);
+//            sendRuntimeInfoRemovedToClients(peer.id);
+//        }
+//    }
 
     m_lastAlivePeers = newAlivePeers;
 }

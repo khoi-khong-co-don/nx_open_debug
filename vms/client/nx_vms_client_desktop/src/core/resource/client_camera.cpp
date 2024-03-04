@@ -84,6 +84,7 @@ QnAbstractStreamDataProvider* QnClientCameraResource::createDataProvider(
     const QnResourcePtr& resource,
     Qn::ConnectionRole role)
 {
+    qDebug() << "QnClientCameraResource::createDataProvider";
     const auto camera = resource.dynamicCast<QnClientCameraResource>();
     NX_ASSERT(camera && role == Qn::CR_Default);
     if (!camera)
@@ -130,7 +131,7 @@ QnAbstractStreamDataProvider* QnClientCameraResource::createLiveDataProvider()
     auto credentials = context->connection()
         ? context->connection()->credentials()
         : nx::network::http::Credentials();
-
+    qDebug() << "QnClientCameraResource::createLiveDataProvider";
     QnArchiveStreamReader *result = new QnArchiveStreamReader(camera);
     auto delegate = new QnRtspClientArchiveDelegate(
         result,

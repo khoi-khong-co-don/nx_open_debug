@@ -88,6 +88,7 @@ QnRtspIoDevice::QnRtspIoDevice(
     m_remoteMediaPort(mediaPort),
     m_remoteRtcpPort(rtcpPort)
 {
+    qDebug()<< "QnRtspIoDevice::QnRtspIoDevice";
     if (m_remoteRtcpPort == 0 && m_remoteMediaPort != 0)
         m_remoteRtcpPort = m_remoteMediaPort + 1;
     setTransport(transport);
@@ -193,8 +194,12 @@ bool QnRtspIoDevice::updateRemotePorts(quint16 mediaPort, quint16 rtcpPort)
 
 bool QnRtspIoDevice::setTransport(nx::vms::api::RtpTransportType rtpTransport)
 {
+    qDebug() << nx::format("QnRtspIoDevice::setTransport rtpTransport :   %1").arg(rtpTransport);
     if (m_transport == rtpTransport)
+    {
+        qDebug() << "QnRtspIoDevice::setTransport m_transport == rtpTransport";
         return true;
+    }
 
     m_transport = rtpTransport;
     return updateSockets();
@@ -287,8 +292,10 @@ bool QnRtspIoDevice::createMulticastSockets()
 
 bool QnRtspIoDevice::updateSockets()
 {
+    qDebug() << "QnRtspIoDevice::updateSockets";
     if (m_transport == nx::vms::api::RtpTransportType::tcp)
     {
+        qDebug() << "QnRtspIoDevice::updateSockets socket tcp";
         m_udpSockets.mediaSocket.reset();
         m_udpSockets.rtcpSocket.reset();
         if (m_owner->m_tcpSock)
@@ -300,10 +307,13 @@ bool QnRtspIoDevice::updateSockets()
     }
 
     if (m_transport == nx::vms::api::RtpTransportType::multicast)
+    {
+        qDebug() << "QnRtspIoDevice::updateSockets socket multicast";
         return createMulticastSockets();
-
+    }
     if (m_transport == nx::vms::api::RtpTransportType::udp)
     {
+        qDebug() << "QnRtspIoDevice::updateSockets socket udp";
         if (!m_udpSockets.bind())
         {
             NX_WARNING(this, "Failed to bind UDP sockets");
@@ -336,6 +346,7 @@ QnRtspIoDevice::AddressInfo QnRtspIoDevice::addressInfo(int port) const
         : nx::network::HostAddress(m_hostAddress.toString());
 
     info.address.port = port;
+    qDebug() << nx::format("PORT RTCP :     %1    IP : %2").args(info.address.port, info.address.address);
     return info;
 }
 
@@ -357,6 +368,7 @@ QnRtspClient::QnRtspClient(
     m_userAgent(nx::network::http::userAgentString()),
     m_defaultAuthScheme(nx::network::http::header::AuthScheme::basic)
 {
+    qDebug() << "TAO RTSP CLIENT";
     m_responseBuffer = new quint8[RTSP_BUFFER_LEN];
     m_responseBufferLen = 0;
 }
@@ -485,7 +497,8 @@ CameraDiagnostics::Result QnRtspClient::open(const nx::utils::Url& url, qint64 s
         targetAddress = nx::network::url::getEndpoint(m_url, DEFAULT_RTP_PORT);
         qDebug() << "KHOI VAO DAY 0";
     }
-        qDebug() << nx::format("GET targetAddress %1").arg(targetAddress);
+        qDebug() << nx::format("GET targetAddress %1").arg(targetAddress.port);
+//        targetAddress.port = 8080;
     if (!m_tcpSock->connect(targetAddress, std::chrono::milliseconds(TCP_CONNECT_TIMEOUT_MS)))
     {
         qDebug() << "not connect";
@@ -885,6 +898,7 @@ bool QnRtspClient::sendSetup()
                 transportStr += QLatin1String("interleaved=") + QString::number(track.interleaved.first) + QLatin1Char('-') + QString::number(track.interleaved.second);
             }
             request.headers.insert(nx::network::http::HttpHeader("Transport", transportStr));
+            qDebug() << nx::format("TransportStr Header:    %1").arg(transportStr);
         }
 
         if(!m_SessionId.isEmpty())
@@ -921,6 +935,7 @@ bool QnRtspClient::sendSetup()
 
 bool QnRtspClient::parseSetupResponse(const QString& response, SDPTrackInfo* track, int trackIndex)
 {
+    qDebug() << nx::format("RESPONSE      -------------- :     %1").arg(response);
     QString sessionParam = extractRtspParam(response, QLatin1String("Session:"));
     bool isFirstParam = true;
     for (const auto& parameter: sessionParam.split(';', Qt::SkipEmptyParts))
@@ -1255,37 +1270,53 @@ int QnRtspClient::readBinaryResponse(quint8* data, int maxDataSize)
 {
     if (!m_tcpSock)
         return 0;
+    for (int i = 0 ; i< 10; i++)
+        qDebug() << nx::format("data before [%1] :      [%2]").args(i, data[i]);
     qDebug() << "QnRtspClient::readBinaryResponse";
     while (m_tcpSock->isConnected())
     {
-        while (m_responseBufferLen < 4) {
+        while (m_responseBufferLen < 4) {                           // nhận 4 bit đầu
             int bytesRead = readSocketWithBuffering(m_responseBuffer+m_responseBufferLen, 4 - m_responseBufferLen, true);
-            qDebug() << "Vào readBinaryResponse 1";
+            qDebug() << "QnRtspClient::readBinaryResponse Vào readBinaryResponse 1";
+
             if (bytesRead <= 0)
                 return bytesRead;
             m_responseBufferLen += bytesRead;
         }
-        qDebug() << "Vào readBinaryResponse 2 " << m_responseBufferLen;
+        for (int i = 0 ; i<m_responseBufferLen ; i++)
+            qDebug() << nx::format("m_responseBuffer [%1] :      [%2]").args(i, m_responseBuffer[i]);
+        qDebug() << "QnRtspClient::readBinaryResponse Vào readBinaryResponse 2 " << m_responseBufferLen;
         if (m_responseBuffer[0] == '$')
         {
-            qDebug() << "Vào readBinaryResponse 2";
+            qDebug() << "QnRtspClient::readBinaryResponse Vào readBinaryResponse 2";
             break;
         }
         // have text response or part of text response.
         if (!readAndProcessTextData())
         {
-            qDebug() << "Vào readBinaryResponse 3";
+            qDebug() << "QnRtspClient::readBinaryResponse Vào readBinaryResponse 3";
             return -1;
         }
     }
-    int dataLen = (m_responseBuffer[2]<<8) + m_responseBuffer[3] + 4;
+
+    ///////////////////// Đã nhận kí tự "$" xong////////////////////////////////
+
+
+    /////////////////////// giải header//////////////////////////////
+
+    qDebug() << "QnRtspClient::readBinaryResponse Vào readBinaryResponse 4";
+    int dataLen = (m_responseBuffer[2]<<8) + m_responseBuffer[3] + 4;                       // Tại sao + 4 ngay đây??????
+    qDebug() << nx::format("data dich bit :  2:  %1     3: %2     datalen:   %3").args((m_responseBuffer[2]<<8), m_responseBuffer[3] , dataLen);
     if (maxDataSize < dataLen)
         return -2; // not enough buffer
+    qDebug() << "QnRtspClient::readBinaryResponse Vào readBinaryResponse 5";
     int copyLen = qMin(dataLen, m_responseBufferLen);
     memcpy(data, m_responseBuffer, copyLen);
     if (m_responseBufferLen > copyLen)
         memmove(m_responseBuffer, m_responseBuffer + copyLen, m_responseBufferLen - copyLen);
     data += copyLen;
+    for (int i = 0 ; i< 10; i++)
+        qDebug() << nx::format("data after 1 [%1] :      [%2]").args(i, data[i]);
     m_responseBufferLen -= copyLen;
     for (int dataRestLen = dataLen - copyLen; dataRestLen > 0;)
     {
@@ -1293,13 +1324,14 @@ int QnRtspClient::readBinaryResponse(quint8* data, int maxDataSize)
         int bytesRead = readSocketWithBuffering(data, dataRestLen, true);
         if (bytesRead <= 0)
         {
-            qDebug() << "Vào readBinaryResponse 4";
+            qDebug() << "QnRtspClient::readBinaryResponse Vào readBinaryResponse 6";
             return bytesRead;
         }
         dataRestLen -= bytesRead;
         data += bytesRead;
     }
-    qDebug() << "QnRtspClient::readBinaryResponse " << *data;
+    for (int i = 0 ; i< 10; i++)
+        qDebug() << nx::format("data after 2 [%1] :      [%2]").args(i, data[i]);
     qDebug() << "QnRtspClient::readBinaryResponse " << dataLen;
     return dataLen;
 }
@@ -1420,8 +1452,13 @@ bool QnRtspClient::readTextResponse(QByteArray& response)
             }
 
             int rtpChannelNum = tmpData[1];
+            qDebug() << nx::format("tmpData[0] : ").arg(tmpData[0]);
+            qDebug() << nx::format("tmpData[1] : ").arg(tmpData[1]);
+            qDebug() << nx::format("tmpData[2] : ").arg(tmpData[2]);
+            qDebug() << nx::format("tmpData[3] : ").arg(tmpData[3]);
             if (isRtcp(rtpChannelNum))
             {
+                qDebug() << "QnRtspClient::readTextResponse isRTCP";
                 if (!processTcpRtcpData(tmpData, bytesRead))
                     NX_VERBOSE(this, "Can't parse RTCP report while reading text response");
             }
@@ -1434,6 +1471,7 @@ bool QnRtspClient::readTextResponse(QByteArray& response)
         }
         else
         {
+            qDebug() << " QnRtspClient::readTextResponse text data";
             // text data
             int msgLen = QnTCPConnectionProcessor::isFullMessage(QByteArray::fromRawData((const char*)m_responseBuffer, m_responseBufferLen));
             if (msgLen < 0)
@@ -1490,6 +1528,7 @@ void QnRtspClient::updateTransportHeader(QByteArray& response)
             }
         }
     }
+    qDebug() << nx::format("QnRtspClient::updateTransportHeader %1").arg(tmp);
 }
 
 void QnRtspClient::setTransport(nx::vms::api::RtpTransportType transport)
@@ -1727,15 +1766,17 @@ CameraDiagnostics::Result QnRtspClient::sendRequestAndReceiveResponse(
 
         ////////////// send data to socket ///////////////////////////////////////////
         qDebug() << "QnRtspClient::sendRequestAndReceiveResponse";
-//        if( m_tcpSock->send(requestBuf.data(), requestBuf.size()) <= 0 )
-//        {
-//            NX_DEBUG(this, "Failed to send request: %1", SystemError::getLastOSErrorText());
-//            return CameraDiagnostics::ConnectionClosedUnexpectedlyResult(m_url.host(), port);
-//        }
+        if( m_tcpSock->send(requestBuf.data(), requestBuf.size()) <= 0 )
+        {
+            NX_DEBUG(this, "Failed to send request: %1", SystemError::getLastOSErrorText());
+            qDebug() << nx::format("Failed to send request: %1").arg(SystemError::getLastOSErrorText());
+            return CameraDiagnostics::ConnectionClosedUnexpectedlyResult(m_url.host(), port);
+        }
 
         if( !readTextResponse(responseBuf) )
         {
             NX_DEBUG(this, "Failed to read response");
+            qDebug() << "Failed to read response";
             return CameraDiagnostics::ConnectionClosedUnexpectedlyResult(m_url.host(), port);
         }
 
@@ -1745,7 +1786,7 @@ CameraDiagnostics::Result QnRtspClient::sendRequestAndReceiveResponse(
 
         nx::network::rtsp::RtspResponse response;
 
-        ////////////// call HTTP  ///////////////////////////////////////////
+        ////////////// read response  ///////////////////////////////////////////
         qDebug() << nx::format("QnRtspClient::sendRequestAndReceiveResponse response: %1").arg(response);
 
         if (!response.parse(nx::ConstBufferRefType(responseBuf.data(), responseBuf.size())))

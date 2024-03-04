@@ -61,10 +61,9 @@ struct Manager::Private
                 nx::network::SocketAddress resolvedEndpoint)
             {
                 NX_VERBOSE(this, "Received module info: %1", QJson::serialized(information));
-                qDebug() << "Received module info: %1", QJson::serialized(information);
+                qDebug() << nx::format("Received module info: %1").arg(QJson::serialized(information));
                 NX_ASSERT(!requestedEndpoint.address.toString().empty());
                 ModuleEndpoint module(std::move(information), std::move(requestedEndpoint));
-
                 if (serverModeInfo && serverModeInfo->peerId == module.id)
                 {
                     const auto runtimeId = serverModeInfo->sessionId;
@@ -99,11 +98,13 @@ struct Manager::Private
                 if (isNew)
                 {
                     NX_DEBUG(this, "Found module %1 on endpoint %2", module.id, module.endpoint);
+                    qDebug() << nx::format("Found module %1 on endpoint %2").args(module.id, module.endpoint);
                     emit q->found(module);
                 }
                 else
                 {
                     NX_DEBUG(this, "Changed module %1 on endpoint %2", module.id, module.endpoint);
+                    qDebug() << nx::format("Changed module %1 on endpoint %2").args(module.id, module.endpoint);
                     emit q->changed(module);
                 }
 
@@ -154,6 +155,8 @@ struct Manager::Private
 
                 if (!isOwnServer && endpoints.size() != 0)
                 {
+                    qDebug() << nx::format("endpoints Server %1").arg(endpoints);
+                    qDebug() << nx::format("data server : %1").arg(module.id);
                     moduleConnector->newEndpoints(
                         {endpoints.cbegin(), endpoints.cend()},
                         module.id);

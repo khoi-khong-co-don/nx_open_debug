@@ -118,6 +118,7 @@ RemoteSession::RemoteSession(
 {
     // Audit id should be updated when establishing new session.
     // TODO: #sivanov Remove global singleton storage, use session id as audit id everywhere.
+    qDebug() << "RemoteSession::RemoteSession";
     systemContext->updateRunningInstanceGuid();
 
     d->remoteConnectionFactory = qnClientCoreModule->networkModule()->connectionFactory();
@@ -258,10 +259,12 @@ bool RemoteSession::keepCurrentServerOnError(RemoteConnectionErrorCode error)
 void RemoteSession::establishConnection(RemoteConnectionPtr connection)
 {
     NX_VERBOSE(this, "Initialize new connection");
+    qDebug() << "Initialize new connection";
     stopReconnecting();
 
     if (auto oldConnection = this->connection())
     {
+        qDebug() << "Old Connection == This Connection";
         oldConnection->messageBusConnection()->messageBus()->disconnect(this);
         if (NX_ASSERT(d->messageProcessor))
             d->messageProcessor->init({});
@@ -304,7 +307,10 @@ void RemoteSession::establishConnection(RemoteConnectionPtr connection)
     connection->initializeMessageBusConnection(qnClientCoreModule->commonModule());
     qnSyncTime->setTimeSyncManager(connection->timeSynchronizationManager());
     if (NX_ASSERT(d->messageProcessor))
+    {
+        qDebug() << "INIT messageProcessor";
         d->messageProcessor->init(connection->messageBusConnection());
+    }
 
     auto messageBus = connection->messageBusConnection()->messageBus();
     auto makeServerMarkingFunction=
@@ -370,6 +376,7 @@ void RemoteSession::onMessageBusConnectionOpened()
 {
     NX_VERBOSE(this, "Connection opened");
     stopReconnecting();
+    qDebug() << "Set State WaitingResources";
     setState(State::waitingResources);
 }
 
@@ -389,7 +396,7 @@ void RemoteSession::tryToRestoreConnection()
 {
     if (d->reconnectHelper)
         return;
-
+    qDebug()<< "RemoteSession::tryToRestoreConnection()";
     d->reconnectHelper = std::make_unique<ReconnectHelper>(systemContext(), d->stickyReconnect);
     setState(State::reconnecting);
     reconnectStep();

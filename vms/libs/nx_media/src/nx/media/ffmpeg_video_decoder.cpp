@@ -19,7 +19,6 @@ extern "C" {
 #include <QtMultimedia/QAbstractVideoBuffer>
 #include <QtMultimedia/private/qabstractvideobuffer_p.h>
 //#include <opencv4/opencv2/opencv.hpp>
-#include <opencv2/opencv.hpp>
 #include <ctime>
 namespace nx {
 namespace media {
@@ -220,21 +219,21 @@ AVFrame* FfmpegVideoDecoderPrivate::convertPixelFormat(const AVFrame* srcFrame)
         0, srcFrame->height,
         dstFrame->data, dstFrame->linesize);
     qDebug() << "VAO LUU ANH 2";
-    ///////////////////////////// KHOI THEM ////////////////////////////////
-    cv::Mat img(srcFrame->height,
-                srcFrame->width,
-                CV_8UC3,
-                srcFrame->data[0]);
-    time_t currentTime = time(0);
-    std::tm* timeInfo = std::localtime(&currentTime);
-        std::ostringstream oss;
-        oss << std::put_time(timeInfo, "%Y-%m-%d %H:%M:%S");
+//    ///////////////////////////// KHOI THEM ////////////////////////////////
+//    cv::Mat img(srcFrame->height,
+//                srcFrame->width,
+//                CV_8UC3,
+//                srcFrame->data[0]);
+//    time_t currentTime = time(0);
+//    std::tm* timeInfo = std::localtime(&currentTime);
+//        std::ostringstream oss;
+//        oss << std::put_time(timeInfo, "%Y-%m-%d %H:%M:%S");
 
-        std::string timeString = oss.str();
-        timeString.append(".jpg");
-    std::string filePath = "/home/khoi/Oryza/";
-    filePath.append(timeString);
-    cv::imwrite(filePath, img);
+//        std::string timeString = oss.str();
+//        timeString.append(".jpg");
+//    std::string filePath = "/home/khoi/Oryza/";
+//    filePath.append(timeString);
+//    cv::imwrite(filePath, img);
 
     return dstFrame;
 }

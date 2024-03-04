@@ -232,6 +232,7 @@ public:
             case RemoteConnectionErrorCode::unexpectedServerId:
             default:
             {
+            qDebug() << "Internal error. Please try again later.";
                 return {
                     tr("Internal error. Please try again later."),
                     connectionError()

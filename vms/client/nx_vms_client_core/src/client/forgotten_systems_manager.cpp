@@ -26,10 +26,12 @@ QnForgottenSystemsManager::QnForgottenSystemsManager():
     const auto processSystemDiscovered =
         [this](const QnSystemDescriptionPtr& system)
         {
+            qDebug()<< "const auto processSystemDiscovered";
             const auto checkOnlineSystem =
                 [this, id = system->id(), localId = system->localId(),
                     rawSystem = system.data(), servers = system->servers()]()
                 {
+                    qDebug()<< "const auto processSystemDiscovered 1";
                     const bool isCompatible = std::any_of(servers.cbegin(), servers.cend(),
                         [](const auto& serverInfo)
                         {
@@ -43,6 +45,7 @@ QnForgottenSystemsManager::QnForgottenSystemsManager():
                         rememberSystem(id);
                         rememberSystem(localId.toString());
                     }
+                    qDebug()<< "const auto processSystemDiscovered 2";
                 };
 
             connect(system.data(), &QnBaseSystemDescription::onlineStateChanged,
