@@ -62,6 +62,7 @@ vms::api::PersistentIdData ConnectionContext::decode(PeerNumberType shortPeerNum
 PeerNumberType ConnectionContext::encode(
     const vms::api::PersistentIdData& fullId, PeerNumberType shortPeerNumber)
 {
+    qDebug() << nx::format("ConnectionContext::encode FullID:    %1").arg(fullId.id);
     return shortPeerInfo.encode(fullId, shortPeerNumber);
 }
 

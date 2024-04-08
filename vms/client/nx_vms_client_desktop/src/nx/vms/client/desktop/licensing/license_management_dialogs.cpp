@@ -287,6 +287,7 @@ void LicenseActivationDialogs::licenseAlreadyActivated(
     const QString& hardwareId,
     const QString& time)
 {
+    qDebug() << nx::format("LicenseActivationDialogs::licenseAlreadyActivated hardwareId: %1    time: %2").args(hardwareId, time);
     const QString supportContactString = Private::getValidLicenseKeyMessage(parent);
 
     const QString text = time.isEmpty()

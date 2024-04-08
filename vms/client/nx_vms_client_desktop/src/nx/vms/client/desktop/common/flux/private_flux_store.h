@@ -42,8 +42,10 @@ struct PrivateFluxStore
         bool changed = false;
         std::tie(changed, state) = reduce(std::move(state));
 
-        if (changed)
+        if (changed) {
+            qDebug() << nx::format("CÓ THAY ĐỔI TRẠNG THÁI !!!");
             emit q->stateChanged(state);
+        }
     }
 };
 

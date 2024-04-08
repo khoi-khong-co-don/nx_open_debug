@@ -123,17 +123,22 @@ struct CameraSettingsDialog::Private: public QObject
             && !store->state().readOnly;
     }
 
-    void applyChanges()
+    void applyChanges() // THIENNC camera_settings_dialog.cpp
     {
         if (store->state().recording.enabled.valueOr(false))
         {
-            if (!licenseUsageHelper->canEnableRecording(cameras))
-                store->setRecordingEnabled(false);
+            qDebug() << "RECORDING IS ON 1";
+            if (!licenseUsageHelper->canEnableRecording(cameras)) {
+                qDebug() << "MÀY ĐÉO CÓ LICENSE";
+                // store->setRecordingEnabled(false);
+                store->setRecordingEnabled(true);
+            }
         }
 
         // Actual for the single-camera mode only.
         if (store->state().recording.enabled.valueOr(false))
         {
+            qDebug() << "RECORDING IS ON 2";
             for (const auto& camera: cameras)
             {
                 const auto& server = camera->getParentServer();
@@ -166,13 +171,17 @@ struct CameraSettingsDialog::Private: public QObject
                     camera->updatePreferredServerId();
 
                 resetChanges();
+                qDebug() << "TẠO RA APPLY";
             };
 
         const auto backout =
             [this, camerasCopy = cameras](bool success)
             {
-                if (!success && camerasCopy == cameras)
+                qDebug() << nx::format("WTF ???? CHECK success: %1").arg(success);
+                if (!success && camerasCopy == cameras) {
+                    qDebug() << nx::format("Backout resetChanges");
                     resetChanges();
+                }
             };
 
         qnResourcesChangesManager->saveCamerasBatch(cameras, apply, backout);
@@ -459,6 +468,7 @@ bool CameraSettingsDialog::setCameras(const QnVirtualCameraResourceList& cameras
         switch (result)
         {
             case QDialogButtonBox::Apply:
+                qDebug() << "KhoiVH nhan nut Apply 1";
                 d->applyChanges();
                 break;
             case QDialogButtonBox::Discard:
@@ -535,7 +545,9 @@ void CameraSettingsDialog::buttonBoxClicked(QDialogButtonBox::StandardButton but
     switch (button)
     {
         case QDialogButtonBox::Ok:
+            qDebug() << "KhoiVH Nhan nut OK";
         case QDialogButtonBox::Apply:
+            qDebug() << "KhoiVH Nhan nut Apply";
             if (d->hasChanges())
                 d->applyChanges();
             break;
@@ -620,12 +632,14 @@ void CameraSettingsDialog::updateScheduleAlert(const CameraSettingsDialogState& 
 
 void CameraSettingsDialog::loadState(const CameraSettingsDialogState& state)
 {
+    //THIENNC CHECKER LOAD SETTINGS
+
     static const QString kWindowTitlePattern = lit("%1 - %2");
 
     const QString caption = QnCameraDeviceStringSet(
         tr("Device Settings"),
         tr("Devices Settings"),
-        tr("Camera Settings"),
+        tr("Camera Settings THIENNC"),
         tr("Cameras Settings"),
         tr("I/O Module Settings"),
         tr("I/O Modules Settings")

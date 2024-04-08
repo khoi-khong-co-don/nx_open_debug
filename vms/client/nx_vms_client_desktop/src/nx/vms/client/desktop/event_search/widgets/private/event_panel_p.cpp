@@ -477,7 +477,7 @@ void EventPanel::Private::rebuildTabs()
     updateTab(m_motionTab,
         m_motionTab->isAllowed(),
         qnSkin->icon(lit("events/tabs/motion.svg")),
-        tr("Motion", "Motion tab title"));
+        tr(" KHOI 1 Motion", "Motion tab title"));
 
     updateTab(m_bookmarksTab,
         m_bookmarksTab->searchWidget()->isAllowed(),

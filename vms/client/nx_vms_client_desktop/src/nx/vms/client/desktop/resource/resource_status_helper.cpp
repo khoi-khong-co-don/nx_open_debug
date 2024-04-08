@@ -382,7 +382,6 @@ void ResourceStatusHelper::Private::executeAction(ActionType type)
                 "resource_status_overlay_enable_license");
             if (!NX_ASSERT(m_camera && m_licenseUsage == LicenseUsage::notUsed))
                 return;
-
             qnResourcesChangesManager->saveCamera(m_camera,
                 [](const QnVirtualCameraResourcePtr& camera)
                 {

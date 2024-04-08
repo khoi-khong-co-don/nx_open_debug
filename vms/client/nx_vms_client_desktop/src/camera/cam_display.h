@@ -117,6 +117,7 @@ public:
     bool isEOFReached() const;
     bool isStillImage() const;
     virtual void putData(const QnAbstractDataPacketPtr& data) override;
+    virtual void putData(AVPacket* packet, AVCodecContext *pCodecCtx, AVFormatContext *pFormatCtx, QnAbstractStreamDataProvider* dataProvider, qint64 timestamp) override;
     virtual QSize getMaxScreenSize() const override; //< From AbstractVideoDisplay
     QnArchiveStreamReader* getArchiveReader() const;
     virtual bool isFullScreen() const override; //< From AbstractVideoDisplay
@@ -160,8 +161,8 @@ public slots:
     void onJumpOccured(qint64 time);
     void onRealTimeStreamHint(bool value);
     void onSlowSourceHint();
-    void onReaderPaused();
-    void onReaderResumed();
+    void onReaderPaused(qint64 time);
+    void onReaderResumed(int64_t time);
     void onPrevFrameOccured();
     void onNextFrameOccured();
 
@@ -190,9 +191,12 @@ protected:
     void afterJump(QnAbstractMediaDataPtr media);
     void processNewSpeed(float speed);
     bool useSync(QnConstAbstractMediaDataPtr md);
+    bool useSync(AVPacket* packet);
     int getBufferingMask();
 
 private:
+
+
     bool display(QnCompressedVideoDataPtr vd, bool sleep, float speed);
 
     void hurryUpCheck(QnCompressedVideoDataPtr vd, float speed, qint64 needToSleep, qint64 realSleepTime);
@@ -244,7 +248,8 @@ protected:
         nx::audio::Format format;
         int bitsPerCodedSample = -1;
     };
-
+    bool m_isServerOryza = false;
+    int64_t m_timeStamp;
     QnVideoStreamDisplay* m_display[CL_MAX_CHANNELS];
     QQueue<QnCompressedVideoDataPtr> m_videoQueue[CL_MAX_CHANNELS];
 

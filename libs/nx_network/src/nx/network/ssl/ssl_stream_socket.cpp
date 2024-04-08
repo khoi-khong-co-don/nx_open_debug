@@ -268,14 +268,12 @@ void StreamSocket::connectAsync(
 
 int StreamSocket::recv(void* buffer, std::size_t bufferLen, int flags)
 {
-    qDebug() << "KHOI StreamSocket::recv";
     switchToSyncModeIfNeeded();
     // TODO: Remove usage of setFlagsForCallsInThread(). `flags` should be passed to
     // m_sslPipeline->read() or be removed from StreamSocket::recv().
     if (flags != 0)
         m_socketToPipelineAdapter->setFlagsForCallsInThread(std::this_thread::get_id(), flags);
     const int result = m_sslPipeline->read(buffer, bufferLen);
-    qDebug() << nx::format("result buffer %1").arg(&buffer);
 //    const char* buferStr = static_cast<const char*>(buffer);
 //    qDebug() << "buferStr: " << buferStr;
 //    QFile file("/home/khoi/Oryza/text.jpg");

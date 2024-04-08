@@ -2030,11 +2030,14 @@ void QnTimeSlider::updateLive()
 {
     const bool isLive = m_liveSupported && !m_selecting && value() == maximum();
     if (m_isLive == isLive)
+    {
         return;
-
+    }
     NX_VERBOSE(this, "Live changed to %1", isLive);
     if (!isLive)
-        NX_VERBOSE(this, "Value %1 while maximum is %2", value(), maximum());
+    {
+        NX_VERBOSE(this, " Value %1 while maximum is %2", value(), maximum());
+    }
     m_isLive = isLive;
 }
 
@@ -3708,6 +3711,7 @@ void QnTimeSlider::startDragProcess(DragInfo* info)
     /* We have to use mapping because these events can be caused by the tooltip as well as by the slider itself. */
     if (m_dragMarker == CreateSelectionMarker)
     {
+        qDebug() << "QnTimeSlider::startDragProcess setSliderDown(true)";
         setSliderDown(true);
         setLivePreviewAllowed(false);
         setSliderPosition(valueFromPosition(mapFromScene(info->mousePressScenePos())));
@@ -3725,8 +3729,10 @@ void QnTimeSlider::startDrag(DragInfo* info)
     m_dragIsClick = false;
 
     if (m_dragMarker != NoMarker)
+    {
+        qDebug() << "QnTimeSlider::startDrag setSliderDown(true)";
         setSliderDown(true);
-
+    }
     switch (m_dragMarker)
     {
         case NoMarker:
@@ -3851,7 +3857,7 @@ void QnTimeSlider::finishDragProcess(DragInfo* info)
         m_selecting = false;
         emit selectionReleased();
     }
-
+    qDebug() << "QnTimeSlider::finishDragProcess setSliderDown(false)";
     setSliderDown(false);
     m_dragDelta = QPointF();
 }

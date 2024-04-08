@@ -55,6 +55,10 @@ public:
     CLVideoDecoderOutput(const QImage& image);
     ~CLVideoDecoderOutput();
 
+//    static CLVideoDecoderOutputPtr create(const CLVideoDecoderOutput& output) {
+//            return CLVideoDecoderOutputPtr(new CLVideoDecoderOutput(output));
+//        }
+
     MemoryType memoryType() const { return m_memoryType; }
     bool isEmpty() const;
     void attachVideoSurface(std::unique_ptr<AbstractVideoSurface> surface);

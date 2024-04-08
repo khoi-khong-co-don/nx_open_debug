@@ -365,7 +365,7 @@ ArchiveFrameExtractor::ArchiveFrameExtractor(
         nx::network::http::Credentials credentials;
         if (auto connection = context->connection())
             credentials = context->connection()->credentials();
-
+        qDebug() << "Tao QnRtspClientArchiveDelegate 2";
         auto rtspDelegate = std::make_unique<QnRtspClientArchiveDelegate>(
             /*archiveStreamReader*/ nullptr,
             std::move(credentials),

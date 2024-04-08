@@ -68,7 +68,9 @@ public:
         QByteArray serializedData;
         if (serializationFormat() == Qn::UbjsonFormat)
         {
-            serializedData = QnUbjson::serialized(input);
+            // Server Oryza
+            //serializedData = QnUbjson::serialized(input);
+            serializedData = QJson::serialized(input);
         }
         else
         {

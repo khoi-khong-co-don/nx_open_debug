@@ -105,12 +105,10 @@ int QnTCPConnectionProcessor::isFullMessage(
 {
     if( message.startsWith(nx_flash_sock::POLICY_FILE_REQUEST_NAME) )
         return message.size();
-
     if( fullMessageSize && fullMessageSize->has_value() )
         return fullMessageSize->value() > message.size()
             ? 0
             : fullMessageSize->value();   //signalling that full message has been read
-
     QByteArray delimiter = "\n";
     int pos = message.indexOf(delimiter);
     if (pos == -1)
@@ -118,7 +116,6 @@ int QnTCPConnectionProcessor::isFullMessage(
     if (pos > 0 && message[pos-1] == '\r')
         delimiter = "\r\n";
     int contentLen = 0;
-
     //retrieving content-length from message
     QByteArray lRequest = message.toLower();
     int contentLenPos = lRequest.indexOf("content-length");
@@ -150,17 +147,19 @@ int QnTCPConnectionProcessor::isFullMessage(
     const int dblDelimPos = message.indexOf(dblDelim);
     if (dblDelimPos == -1)
         return 0;
-
     const int expectedSize = dblDelimPos + dblDelim.size() + contentLen;
     if (expectedSize < dblDelimPos + dblDelim.size())
         return -1;
-
     if( fullMessageSize )
         *fullMessageSize = expectedSize;
     if (expectedSize > message.size())
+    {
         return 0;
+    }
     else
+    {
         return expectedSize;
+    }
 }
 
 int QnTCPConnectionProcessor::isFullMessage(

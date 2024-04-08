@@ -154,8 +154,20 @@ NX_REFLECTION_INSTRUMENT(ModuleInformationWrapper, (reply));
 
 nx::utils::Url makeUrl(nx::network::SocketAddress address, std::string path)
 {
+    qDebug() << nx::format("Dia chi cua server de makeUrl      %1").arg(address);
+    ///// KHOI THEM //////////////////////
+        if (address.port == 7005)               // 7005
+        {
+            qDebug() << "SERVER ORYZA";
+            return nx::network::url::Builder()
+                .setScheme(kUrlSchemeName)        //kSecureUrlSchemeName
+                .setEndpoint(address)
+                .setPath(path)
+                .toUrl();
+        }
+    ///////////////////////////////////
     return nx::network::url::Builder()
-        .setScheme(kSecureUrlSchemeName)
+        .setScheme(kSecureUrlSchemeName)        //kSecureUrlSchemeName
         .setEndpoint(address)
         .setPath(path)
         .toUrl();
@@ -243,6 +255,8 @@ struct RemoteConnectionFactoryRequestsManager::Private
                     }
                     else
                     {
+                        qDebug() << "Bị lỗi ngay đây << không thể kết nối";
+                        qDebug() << nx::format("Status Code:    %1").arg(response.statusLine.statusCode);
                         context->setError(RemoteConnectionErrorCode::genericNetworkError);
                     }
                 }
@@ -315,9 +329,10 @@ RemoteConnectionFactoryRequestsManager::ModuleInformationReply
 {
     NX_DEBUG(this, "Requesting module information and certificate from %1", context);
     const auto url = makeUrl(context->address(), "/api/moduleInformation");
+    qDebug() << nx::format("Requesting module information and certificate from %1").arg(context);
 
     const bool certificatePresent = (context->handshakeCertificateChain.size() > 0);
-
+    qDebug() << nx::format("Stored certificate chain length: %1").arg(context->handshakeCertificateChain.size());
     // Create a custom client that accepts any certificate and stores its data.
     ModuleInformationReply reply{.handshakeCertificateChain = context->handshakeCertificateChain};
     auto request = certificatePresent
@@ -331,6 +346,7 @@ RemoteConnectionFactoryRequestsManager::ModuleInformationReply
     if (!context->failed())
     {
         NX_DEBUG(this, "Received module information for server %1", reply.moduleInformation.id);
+        qDebug() << nx::format("Received module information for server %1").arg(reply.moduleInformation.id);
         NX_VERBOSE(this, "Data:\n%1", nx::reflect::json::serialize(reply.moduleInformation));
         if (reply.moduleInformation.id.isNull())
         {
@@ -338,9 +354,10 @@ RemoteConnectionFactoryRequestsManager::ModuleInformationReply
             context->setError(RemoteConnectionErrorCode::networkContentError);
         }
     }
+    //qDebug() << nx::format("ModuleInformationReply: %1").args(reply);
 
     NX_DEBUG(this, "Stored certificate chain length: %1", reply.handshakeCertificateChain.size());
-
+    qDebug() << nx::format("Stored certificate chain length: %1").arg(reply.handshakeCertificateChain.size());
     return reply;
 }
 
@@ -348,7 +365,7 @@ RemoteConnectionFactoryRequestsManager::ServersInfoReply
     RemoteConnectionFactoryRequestsManager::getServersInfo(ContextPtr context) const
 {
     static const nx::utils::SoftwareVersion kServersInfoV2Supported{5, 1, 0, 0};
-
+    qDebug() << "RemoteConnectionFactoryRequestsManager::ServersInfoReply";
     NX_DEBUG(this, "Retrieving list of servers info from %1", context);
 
     const auto url =
@@ -368,7 +385,6 @@ RemoteConnectionFactoryRequestsManager::ServersInfoReply
         }();
 
     const bool certificatePresent = (context->handshakeCertificateChain.size() > 0);
-
     // Create a custom client that accepts any certificate and stores its data.
     ServersInfoReply reply{.handshakeCertificateChain = context->handshakeCertificateChain};
     auto request = certificatePresent
@@ -386,6 +402,7 @@ RemoteConnectionFactoryRequestsManager::ServersInfoReply
     }
 
     NX_DEBUG(this, "Stored certificate chain length: %1", reply.handshakeCertificateChain.size());
+    qDebug() << nx::format("Stored certificate chain length: %1").arg(reply.handshakeCertificateChain.size());
 
     return reply;
 }
@@ -481,6 +498,7 @@ void RemoteConnectionFactoryRequestsManager::checkDigestAuthentication(ContextPt
 {
     NX_DEBUG(this, "Checking digest authentication as %1 in %2",
         context->credentials().username, context);
+    qDebug() << nx::format("Checking digest authentication as %1 in %2").args(context->credentials().username, context);
 
     if (context->credentials().authToken.type != AuthTokenType::password)
     {
@@ -494,11 +512,24 @@ void RemoteConnectionFactoryRequestsManager::checkDigestAuthentication(ContextPt
         }
         return;
     }
+    //// KHOI THEM //////
+//    const auto url = makeUrl(context->address(), "/api/moduleInformation");
+//    const bool certificatePresent = (context->handshakeCertificateChain.size() > 0);
 
-    const auto url = makeUrl(context->address(), "/api/moduleInformationAuthenticated");
+//    ModuleInformationReply reply{.handshakeCertificateChain = context->handshakeCertificateChain};
+//    auto request = certificatePresent
+//        ? d->makeRequestWithCertificateValidation(context->handshakeCertificateChain)
+//        : std::make_unique<AsyncClient>(makeStoreCertificateFunc(reply.handshakeCertificateChain));
+//    //NetworkManager::setDefaultTimeouts(request.get());
+//    d->doGet<ModuleInformationWrapper>(url, context, std::move(request));
+
+
+    /////////////////////
+    const auto url = makeUrl(context->address(), "/api/moduleInformationAuthenticated");            // GET "/api/moduleInformationAuthenticated"
     auto request = d->makeRequestWithCertificateValidation(context->handshakeCertificateChain);
     request->setCredentials(context->credentials());
     d->doGet<ModuleInformationWrapper>(url, context, std::move(request));
+    qDebug() << "RemoteConnectionFactoryRequestsManager::checkDigestAuthentication(ContextPtr context) END";
 }
 
 std::future<RemoteConnectionFactoryContext::CloudTokenInfo>

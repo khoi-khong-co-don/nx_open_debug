@@ -40,6 +40,7 @@ void LocalSystemsFinder::removeFinalSystem(const QString& id)
 
 void LocalSystemsFinder::processSystemAdded(const QnSystemDescriptionPtr& system)
 {
+    qDebug() << "LocalSystemsFinder::processSystemAdded";
     const auto systemId = system->id();
     auto& hash = m_filteringSystems[systemId];
     auto& localIdUsageCount = hash[system->localId()];

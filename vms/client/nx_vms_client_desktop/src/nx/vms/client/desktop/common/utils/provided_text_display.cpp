@@ -49,7 +49,11 @@ void ProvidedTextDisplay::updateText()
 
 void ProvidedTextDisplay::setText(const QString& value)
 {
+
+    //THIENNC Đây là chỗ gán hiển thị 1 Professional License is required
+
     m_setter(value);
+    qDebug() << nx::format("THIENNC - ProvidedTextDisplay::setText: %1").arg(value);
 }
 
 } // namespace nx::vms::client::desktop

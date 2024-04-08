@@ -78,6 +78,16 @@ void QnAbstractStreamDataProvider::removeDataProcessor(QnAbstractMediaDataRecept
     }
 }
 
+void QnAbstractStreamDataProvider::putDataOryza(AVPacket* packet, AVCodecContext *pCodecCtx, AVFormatContext *pFormatCtx, QnAbstractStreamDataProvider* dataProvider, qint64 timestamp)
+{
+    if (!packet)
+        return;
+
+    const auto dataProcessors = m_dataprocessors.lock();
+    for (const auto& p: *dataProcessors)
+        p->putData(packet, pCodecCtx, pFormatCtx, dataProvider, timestamp);
+}
+
 void QnAbstractStreamDataProvider::putData(const QnAbstractDataPacketPtr& data)
 {
     if (!data)

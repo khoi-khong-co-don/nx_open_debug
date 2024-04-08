@@ -513,7 +513,7 @@ void MediaResourceWidgetPrivate::setStreamDataFilters(StreamDataFilters filters)
     const auto positionUsec = display()->camDisplay()->getExternalTime();
     if (positionUsec == AV_NOPTS_VALUE || positionUsec == DATETIME_NOW)
         return;
-
+    qDebug() << "VAO JumpTo 4";
     reader->jumpTo(/*mksek*/ positionUsec, /*skipTime*/ positionUsec);
 }
 

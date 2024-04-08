@@ -84,12 +84,15 @@ Result QnNxRtpParser::processData(const uint8_t* data, int dataSize, bool& gotDa
     if (rtpHeader->CSRCCount != 0 || rtpHeader->version != 2)
         return {false, "Got malformed RTP packet header. Ignored."};
 
-    const quint8* payload = data + RtpHeader::kSize;
+    const quint8* payload = data + RtpHeader::kSize;        //
     dataSize -= RtpHeader::kSize;
     // Odd numbers - codec context, even numbers - data.
     const bool isCodecContext = qFromBigEndian(rtpHeader->ssrc) & 1;
-    if (isCodecContext)
+
+    if (isCodecContext || isFirstProcess == true)
     {
+        isFirstProcess = false;
+        /// không vào đây
         int contextVersion = 0;
         auto context = std::make_shared<CodecParameters>();
         if (qBetween(
@@ -102,7 +105,6 @@ Result QnNxRtpParser::processData(const uint8_t* data, int dataSize, bool& gotDa
 
         if (!context->deserialize((const char*) payload, dataSize, contextVersion))
             return {false, "Failed to parse codec parameters from RTP packet."};
-
         m_context = context;
     }
     else
@@ -191,12 +193,12 @@ Result QnNxRtpParser::processData(const uint8_t* data, int dataSize, bool& gotDa
                 metadata->m_duration = duration;
                 dataSize -= RTSP_FFMPEG_METADATA_HEADER_SIZE;
                 payload += RTSP_FFMPEG_METADATA_HEADER_SIZE; // deserialize video flags
-
                 m_nextDataPacket = QnAbstractCompressedMetadataPtr(metadata);
                 m_nextDataPacketBuffer = &metadata->m_data;
             }
             else if (context && context->getCodecType() == AVMEDIA_TYPE_VIDEO && dataType == QnAbstractMediaData::VIDEO)
             {
+                /// VÀO ĐÂY///////////
                 if (dataSize < RTSP_FFMPEG_VIDEO_HEADER_SIZE)
                 {
                     return { false, NX_FMT("Unexpected data size for video packet. "
@@ -253,7 +255,6 @@ Result QnNxRtpParser::processData(const uint8_t* data, int dataSize, bool& gotDa
 
             m_nextDataPacket->opaque = cseq;
             m_nextDataPacket->flags = static_cast<QnAbstractMediaData::MediaFlags>(flags);
-
             if (context)
                 m_nextDataPacket->compressionType = context->getCodecId();
             m_nextDataPacket->timestamp =

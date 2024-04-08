@@ -225,7 +225,10 @@ int QnCameraManager<QueryProcessorType>::saveUserAttributes(
     processor().processUpdateAsync(
         ApiCommand::saveCameraUserAttributesList,
         dataList,
-        [handler, requestId](ec2::Result result) { handler(requestId, result); });
+        [handler, requestId](ec2::Result result) { handler(requestId, result);
+                qDebug() << nx::format("THIENNC getUserAttributes: %1").arg(result);
+        });
+
     return requestId;
 }
 

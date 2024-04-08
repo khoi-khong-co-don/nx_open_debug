@@ -142,6 +142,7 @@ QnCachingCameraDataLoaderPtr QnCameraDataManager::loader(
     connect(loader.data(), &QnCachingCameraDataLoader::periodsChanged, this,
         [this, resource](Qn::TimePeriodContent type, qint64 startTimeMs)
         {
+        qDebug() << "Emit periodChanged 2";
             emit periodsChanged(resource, type, startTimeMs);
         });
 

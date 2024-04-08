@@ -193,6 +193,7 @@ void BaseEc2Connection<QueryProcessorType>::init(
 template<class QueryProcessorType>
 void BaseEc2Connection<QueryProcessorType>::startReceivingNotifications()
 {
+    qDebug() << "BaseEc2Connection<QueryProcessorType>::startReceivingNotifications()";
     connect(messageBus(), &AbstractTransactionMessageBus::peerFound,
         this, &BaseEc2Connection<QueryProcessorType>::remotePeerFound, Qt::DirectConnection);
     connect(messageBus(), &AbstractTransactionMessageBus::peerLost,
@@ -241,6 +242,7 @@ template<class QueryProcessorType>
 AbstractMediaServerNotificationManagerPtr
     BaseEc2Connection<QueryProcessorType>::mediaServerNotificationManager()
 {
+    qDebug() << "BaseEc2Connection<QueryProcessorType>::mediaServerNotificationManager()";
     return m_mediaServerNotificationManager;
 }
 
@@ -256,6 +258,7 @@ template<class QueryProcessorType>
 AbstractCameraNotificationManagerPtr
     BaseEc2Connection<QueryProcessorType>::cameraNotificationManager()
 {
+    qDebug() << "BaseEc2Connection<QueryProcessorType>::cameraNotificationManager()";
     return m_cameraNotificationManager;
 }
 

@@ -17,6 +17,23 @@ void QnNovArchiveDelegate::setSpeed(qint64 /*displayTime*/, double value)
     m_reverseMode = value < 0;
 }
 
+void QnNovArchiveDelegate::getNextDataOryza(AVPacket** packet, AVCodecContext** pCodecCtx, AVFormatContext** pFormatCtx, qint64* time, std::string rtsp, qint64 *timeStamp)
+{
+     qDebug() << "QnNovArchiveDelegate::getNextDataOryza";
+}
+
+bool QnNovArchiveDelegate::isServerOryza()
+{
+    qDebug() << "QnNovArchiveDelegate::isServerOryza";
+    return true;
+}
+
+bool QnNovArchiveDelegate::isOpenedRTSP()
+{
+    qDebug() << "QnNovArchiveDelegate::isOpenedRTSP";
+    return true;
+}
+
 bool QnNovArchiveDelegate::open(const QnResourcePtr &resource,
     AbstractArchiveIntegrityWatcher * /*archiveIntegrityWatcher*/)
 {

@@ -276,6 +276,7 @@ QnMediaResourceWidget::QnMediaResourceWidget(
     m_objectTrackingButtonController(new ObjectTrackingButtonController(this)),
     m_toggleImageEnhancementAction(new QAction(this))
 {
+    qDebug() << "KHOI TAO QnMediaResourceWidget::QnMediaResourceWidget";
     NX_ASSERT(d->mediaResource, "Media resource widget was created with a non-media resource.");
     d->isExportedLayout = layoutResource()->isFile();
     d->isPreviewSearchLayout = layoutResource()->isPreviewSearchLayout();
@@ -522,11 +523,12 @@ void QnMediaResourceWidget::handleItemDataChanged(
 {
     if (id != m_itemId)
         return;
-
+    qDebug() << "QnMediaResourceWidget::handleItemDataChanged " << role;
     switch (role)
     {
         case Qn::ItemPausedRole:
         {
+        qDebug() << "QnMediaResourceWidget::handleItemDataChanged Click PAUSE " << Qn::ItemPausedRole;
             const bool shouldPause = data.toBool();
             if (shouldPause == display()->isPaused())
                 return;
@@ -539,10 +541,12 @@ void QnMediaResourceWidget::handleItemDataChanged(
         }
         case Qn::ItemTimeRole:
         {
+            qDebug() << "QnMediaResourceWidget::handleItemDataChanged Click LIVE " << Qn::ItemTimeRole;
             setPosition(data.value<qint64>());
             break;
         }
         case Qn::ItemSpeedRole:
+        qDebug() << "QnMediaResourceWidget::handleItemDataChanged Click SPEED " << Qn::ItemSpeedRole;
             if (const auto reader = display()->archiveReader())
                 reader->setSpeed(data.toDouble());
             break;
@@ -571,6 +575,7 @@ void QnMediaResourceWidget::initRenderer()
 
 void QnMediaResourceWidget::initDisplay()
 {
+    qDebug() << "QnMediaResourceWidget::initDisplay";
     const auto zoomTargetWidget = dynamic_cast<QnMediaResourceWidget *>(this->zoomTargetWidget());
     setDisplay(zoomTargetWidget
         ? zoomTargetWidget->display()
@@ -2213,9 +2218,15 @@ void QnMediaResourceWidget::setPosition(qint64 timestampMs)
         : timestampMs * 1000;
 
     if (reader->isPaused())
+    {
+        qDebug() << nx::format("VAO JumpTo 15.1 timestamp -> %1").arg(timestampUs);
         reader->jumpTo(timestampUs, timestampUs); //< Precise jump to avoid timeline blinks.
+    }
     else
+    {
+        qDebug() << nx::format("VAO JumpTo 15.2 timestamp -> %1").arg(timestampUs);
         reader->jumpTo(timestampUs, 0);
+    }
 }
 
 std::chrono::milliseconds QnMediaResourceWidget::position() const
@@ -2837,6 +2848,7 @@ void QnMediaResourceWidget::processEnableLicenseRequest()
     statisticsModule()->controls()->registerClick(
         "resource_status_overlay_enable_license");
 
+    // qDebug() << nx::format("THIENNC - processEnableLicenseRequest");
     const auto licenseStatus = d->licenseStatus();
     if (licenseStatus != nx::vms::license::UsageStatus::notUsed)
         return;

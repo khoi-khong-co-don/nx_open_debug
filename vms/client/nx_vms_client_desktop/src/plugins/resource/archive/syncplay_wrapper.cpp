@@ -589,6 +589,7 @@ void QnArchiveSyncPlayWrapper::onEofReached(QnlTimeSource* source, bool value)
 {
     Q_D(QnArchiveSyncPlayWrapper);
     NX_MUTEX_LOCKER lock( &d->timeMutex );
+    qDebug() << "QnArchiveSyncPlayWrapper::onEofReached Tao QnAbstractArchiveStreamReader";
     QnAbstractArchiveStreamReader* reader = 0;
     for (QList<ReaderInfo>::iterator i = d->readers.begin(); i < d->readers.end(); ++i)
     {
@@ -613,14 +614,20 @@ void QnArchiveSyncPlayWrapper::onEofReached(QnlTimeSource* source, bool value)
                 bool callSync = QThread::currentThread() == qApp->thread();
                 lock.unlock();
                 if (callSync)
+                {
+                    qDebug() << "VAO JumpTo 6";
                     jumpTo(DATETIME_NOW, 0);
+                }
                 else
                     QMetaObject::invokeMethod(this, "jumpToLive", Qt::QueuedConnection); // all items at EOF position. This call may occured from non GUI thread!
             }
         }
         else {
             if (reader)
+            {
                 reader->jumpTo(DATETIME_NOW, 0); // if sync disabled and items go to archive EOF, jump to live immediatly (without waiting other items)
+                qDebug() << "VAO JumpTo 7";
+            }
         }
     }
 }
@@ -730,6 +737,7 @@ void QnArchiveSyncPlayWrapper::onConsumerBlocksReader(QnAbstractStreamDataProvid
 {
     Q_D(QnArchiveSyncPlayWrapper);
     NX_MUTEX_LOCKER lock( &d->timeMutex );
+    qDebug() << "QnArchiveSyncPlayWrapper::onConsumerBlocksReader Tao QnAbstractArchiveStreamReader";
     QnAbstractArchiveStreamReader* reader = dynamic_cast<QnAbstractArchiveStreamReader*> (_reader);
     if (!reader)
         return;
@@ -783,6 +791,7 @@ void QnArchiveSyncPlayWrapper::disableSync()
         // check if reader stay in EOF position, but position is not LIVE because waiting other items. At this case seek to live
         if (info.isEOF) {
             info.reader->setSpeed(1.0);
+            qDebug() << "VAO JumpTo 8";
             info.reader->jumpTo(DATETIME_NOW, 0);
             info.reader->resumeMedia();
         }
@@ -843,5 +852,6 @@ void QnArchiveSyncPlayWrapper::setLiveModeEnabled(bool value)
 
 void QnArchiveSyncPlayWrapper::jumpToLive()
 {
+    qDebug() << "VAO JumpTo 9";
     jumpTo(DATETIME_NOW, 0);
 }

@@ -66,12 +66,13 @@ QnUuid MediaPlayer::resourceId() const
 
 void MediaPlayer::setResourceId(const QnUuid& resourceId)
 {
+    qDebug() << nx::format("MediaPlayer::setResourceId resourceId -> 1");
     if (m_resourceId == resourceId)
         return;
-
+    qDebug() << nx::format("MediaPlayer::setResourceId resourceId -> 2");
     m_resourceId = resourceId;
     emit resourceIdChanged();
-
+    qDebug() << nx::format("MediaPlayer::setResourceId resourceId -> 3");
     setSource(!resourceId.isNull()
         ? QUrl("camera://media/" + resourceId.toString())
         : QString());

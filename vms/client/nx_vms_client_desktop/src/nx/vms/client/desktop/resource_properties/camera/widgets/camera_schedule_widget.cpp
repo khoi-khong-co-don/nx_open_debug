@@ -90,7 +90,7 @@ CameraScheduleWidget::CameraScheduleWidget(
         store, &CameraSettingsDialogStore::setRecordingEnabled);
 
     connect(ui->enableRecordingCheckBox, &CheckBox::cannotBeToggled, this,
-        [this] { BackgroundFlasher::flash(ui->licenseUsageLabel, colorTheme()->color("red_l2")); });
+        [this] { BackgroundFlasher::flash(ui->licenseUsageLabel, colorTheme()->color("green_l2")); });
 
     // Called when a cell is Alt-clicked. Fetches cell settings as current.
     connect(ui->gridWidget, &ScheduleGridWidget::cellClicked, store,
@@ -140,6 +140,7 @@ void CameraScheduleWidget::setupUi()
     ui->enableRecordingCheckBox->setProperty(style::Properties::kCheckBoxAsButton, true);
     ui->enableRecordingCheckBox->setForegroundRole(QPalette::ButtonText);
 
+    //THIENNC RECORDING SCHEDULE HERE
     ui->scheduleGridGroupBox->setTitle(lit("%1\t(%2)").arg(
         tr("Recording Schedule")).arg(
             tr("based on server time")));

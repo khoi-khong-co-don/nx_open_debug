@@ -97,7 +97,7 @@ QVariant MotionSearchListModel::Private::data(const QModelIndex& index, int role
     switch (role)
     {
         case Qt::DisplayRole:
-            return tr("Motion");
+            return tr("KHOI 3 Motion");
 
         case Qt::DecorationRole:
             return QVariant::fromValue(qnSkin->pixmap("tree/camera.svg"));
@@ -321,7 +321,7 @@ rest::Handle MotionSearchListModel::Private::getMotion(
     auto api = systemContext->connectedServerApi();
     if (!NX_ASSERT(api))
         return {};
-
+    qDebug() << "MotionSearchListModel::Private::getMotion";
     return api->recordedTimePeriods(request, nx::utils::guarded(this,
         [this](bool status, int handle, MultiServerPeriodDataList response)
         {

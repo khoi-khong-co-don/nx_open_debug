@@ -129,7 +129,7 @@ void QnIOModuleMonitor::at_MonitorResponseReceived( nx::network::http::AsyncHttp
     NX_MUTEX_LOCKER lk( &m_mutex );
     if (httpClient != m_httpClient)
         return;
-
+//    qDebug() << "QnIOModuleMonitor::at_MonitorResponseReceived";
     if( httpClient->response()->statusLine.statusCode != nx::network::http::StatusCode::ok )
     {
         NX_WARNING(this, "Failed to subscribe to i/o monitor for camera %1. reason: %2",

@@ -213,7 +213,6 @@ void UdpMulticastFinder::receiveModuleInformation()
             }
 
             NX_VERBOSE(this, nx::format("From %1 got: %2").args(endpoint, m_inData));
-            qDebug() << nx::format("From %1 got: %2").args(endpoint, m_inData);
             nx::vms::api::ModuleInformationWithAddresses moduleInformation;
             if (!QJson::deserialize(m_inData, &moduleInformation))
             {

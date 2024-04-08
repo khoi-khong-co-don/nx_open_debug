@@ -375,8 +375,12 @@ void CameraSettingsDialogStore::setCustomRotation(core::StandardRotation value)
 
 void CameraSettingsDialogStore::setRecordingEnabled(bool value)
 {
+    qDebug() << "THIENNC - CameraSettingsDialogStore::setRecordingEnabled";
+    //
     d->executeAction(
-        [&](State state) { return Reducer::setRecordingEnabled(std::move(state), value); });
+        // [&](State state) { return Reducer::setRecordingEnabled(std::move(state), true); }
+        [&](State state) { return Reducer::setRecordingEnabled(std::move(state), value); }
+        );
 }
 
 void CameraSettingsDialogStore::setAudioEnabled(bool value)

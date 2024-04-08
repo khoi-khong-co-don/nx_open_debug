@@ -128,7 +128,10 @@ struct ExportMediaTool::Private
 
         dataProvider->addDataProcessor(exportRecorder.data());
         if (archiveReader)
+        {
+            qDebug() << "VAO JumpTo 3";
             archiveReader->jumpTo(startTimeUs, startTimeUs);
+        }
 
         dataProvider->start();
         exportRecorder->start();
@@ -178,7 +181,7 @@ private:
 
         const auto tmpReader = qnClientCoreModule->dataProviderFactory()->createDataProvider(
                 mediaResource->toResourcePtr());
-
+        qDebug() << "initDataProvider Tao QnAbstractArchiveStreamReader";
         auto archiveReader = dynamic_cast<QnAbstractArchiveStreamReader*>(tmpReader);
         if (!archiveReader)
         {
@@ -191,7 +194,7 @@ private:
         archiveReader->setQuality(MEDIA_Quality_ForceHigh, true);
         // Additing filtering is required in case of.AVI export.
         archiveReader->addMediaFilter(std::make_shared<H2645Mp4ToAnnexB>());
-
+        qDebug() << "Tao QnRtspClientArchiveDelegate 6";
         if (auto rtspClient = dynamic_cast<QnRtspClientArchiveDelegate*>
             (archiveReader->getArchiveDelegate()))
         {

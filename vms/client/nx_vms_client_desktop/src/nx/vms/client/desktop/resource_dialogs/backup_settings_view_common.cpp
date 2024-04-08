@@ -50,7 +50,7 @@ public:
         QStringList contentTypesStrings;
 
         if (contentTypes.testFlag(BackupContentType::motion))
-            contentTypesStrings.push_back(tr("Motion"));
+            contentTypesStrings.push_back(tr("KHOI Motion"));
 
         if (contentTypes.testFlag(BackupContentType::analytics))
             contentTypesStrings.push_back(tr("Objects"));

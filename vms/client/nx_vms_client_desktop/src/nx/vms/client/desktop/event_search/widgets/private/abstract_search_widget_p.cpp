@@ -841,7 +841,10 @@ void AbstractSearchWidget::Private::updatePlaceholderVisibility()
 {
     m_placeholderVisible = m_visualModel->rowCount() == 0 && !m_mainModel->canFetchData();
     if (m_placeholderVisible)
+    {
+        qDebug() << "MOTION: AbstractSearchWidget::Private::updatePlaceholderVisibility";
         m_placeholderWidget->setText(q->placeholderText(m_mainModel->isConstrained()));
+    }
 
     const auto effect = qobject_cast<QGraphicsOpacityEffect*>(m_placeholderWidget->graphicsEffect());
     if (!effect)

@@ -87,9 +87,14 @@ MainWindow::MainWindow(QQmlEngine* engine, QnWorkbenchContext* context, QWidget*
     // TODO: #vkutin Replace with a better calculation?
     d->sceneWidget->rootContext()->setContextProperty("maxTextureSize",
         QnGlFunctions::estimatedInteger(GL_MAX_TEXTURE_SIZE));
+//    d->sceneWidget->rootContext()->setContextProperty("maxTextureSize",
+//        QnGlFunctions::estimatedInteger(GL_MAX_CLIENT_ATTRIB_STACK_DEPTH));
+
+
 
     d->sceneWidget->setSource(lit("main.qml"));
     d->sceneWidget->setResizeMode(QQuickWidget::SizeRootObjectToView);
+    //d->sceneWidget->setMinimumSize(QSize(1000,1000));
 
     if (d->sceneWidget->status() == QQuickWidget::Error)
     {

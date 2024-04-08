@@ -87,6 +87,7 @@ ControlWidget::ControlWidget(QnWorkbenchContext* context, QWidget* parent):
 
     initButton(m_syncButton, ui::action::ToggleSyncAction,
         "slider/buttons/sync.png");
+
     initButton(m_thumbnailsButton, ui::action::ToggleThumbnailsAction,
         "slider/buttons/thumbnails.png");
     initButton(m_calendarButton, ui::action::ToggleCalendarAction,
@@ -117,6 +118,7 @@ ControlWidget::ControlWidget(QnWorkbenchContext* context, QWidget* parent):
 
     /* Set up handlers. */
     auto streamSynchronizer = workbench()->windowContext()->streamSynchronizer();
+
     connect(streamSynchronizer, &QnWorkbenchStreamSynchronizer::runningChanged,
         this, &ControlWidget::updateSyncButtonState);
     connect(streamSynchronizer, &QnWorkbenchStreamSynchronizer::effectiveChanged,
@@ -192,6 +194,7 @@ ControlWidget::ControlWidget(QnWorkbenchContext* context, QWidget* parent):
     updateSyncButtonState();
     updateLiveButtonState();
     updateVolumeButtonsEnabled();
+    streamSynchronizer->setState(nullptr);
 }
 
 void ControlWidget::setTooltipsVisible(bool enabled)
@@ -284,12 +287,15 @@ void ControlWidget::updateSyncButtonState()
         && navigator()->currentWidgetFlags().testFlag(QnWorkbenchNavigator::WidgetSupportsSync);
 
     // Call setEnabled last to avoid update from button's action enabled state.
-    m_syncButton->setEnabled(syncAllowed && !syncForced);
+    // KhoiVH Disable SYNC BUTTON
+//    m_syncButton->setEnabled(syncAllowed && !syncForced);
     action(ui::action::ToggleSyncAction)->setChecked(syncAllowed && streamSynchronizer->isRunning());
 
     m_syncButton->setToolTip(syncForced
         ? tr("NVR cameras do not support not-synchronized playback")
         : action(action::ToggleSyncAction)->toolTip());
+    // KhoiVH SET State AYNC
+    streamSynchronizer->setState(nullptr);
 }
 
 // -------------------------------------------------------------------------- //
@@ -305,6 +311,7 @@ void ControlWidget::at_jumpToliveAction_triggered()
     {
         // Reset speed. It MUST be done before setLive(true) is called.
         navigator()->setSpeed(1.0);
+        qDebug() << "Vao set live 5";
         navigator()->setLive(true);
         action(action::PlayPauseAction)->setChecked(true);
     }
@@ -330,9 +337,15 @@ void ControlWidget::at_toggleSyncAction_triggered()
     auto streamSynchronizer = workbench()->windowContext()->streamSynchronizer();
 
     if (m_syncButton->isChecked())
+    {
+        qDebug() << "at_toggleSyncAction_triggered 1";
         streamSynchronizer->setState(navigator()->currentWidget());
+    }
     else
+    {
+        qDebug() << "at_toggleSyncAction_triggered 2";
         streamSynchronizer->setState(nullptr);
+    }
 }
 
 } // nx::vms::client::desktop::workbench::timeline

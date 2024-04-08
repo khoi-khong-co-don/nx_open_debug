@@ -322,6 +322,7 @@ void AlarmLayoutHandler::setCameraItemPosition(
             // TODO: #sivanov make sure this magic is required:
             //resourceDisplay->archiveReader()->pauseMedia();
             resourceDisplay->archiveReader()->setSpeed(1.0);
+            qDebug() << "VAO JumpTo 5";
             resourceDisplay->archiveReader()->jumpTo(positionUs, 0);
             resourceDisplay->archiveReader()->resumeMedia();
         }

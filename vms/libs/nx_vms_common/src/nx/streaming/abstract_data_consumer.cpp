@@ -20,6 +20,12 @@ bool QnAbstractDataConsumer::canAcceptData() const
     return (m_dataQueue.size() < m_dataQueue.maxSize());
 }
 
+void QnAbstractDataConsumer::putData(AVPacket* data , AVCodecContext *pCodecCtx, AVFormatContext *pFormatCtx, QnAbstractStreamDataProvider* dataProvider, qint64 timestamp)
+{
+
+}
+
+
 void QnAbstractDataConsumer::putData( const QnAbstractDataPacketPtr& data )
 {
     if (!needToStop())
@@ -73,7 +79,6 @@ void QnAbstractDataConsumer::run()
 
 void QnAbstractDataConsumer::runCycle()
 {
-    //qDebug() << "KHOI QnAbstractDataConsumer::runCycle";
     QnAbstractDataPacketPtr data;
     // LAY DATA FRAME
     bool get = m_dataQueue.pop(data, kWaitTimeoutMs);

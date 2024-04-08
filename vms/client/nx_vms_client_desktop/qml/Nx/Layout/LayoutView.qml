@@ -115,4 +115,8 @@ Control
         const item = containsItem(zoomedItem) ? zoomedItem : null
         interactiveGrid.zoomedItem = item && item.parent
     }
+    Rectangle{
+        anchors.fill: parent
+        color: "red"
+    }
 }

@@ -54,11 +54,21 @@ struct QueryProcessor::Private
     nx::utils::Url makeUrl(ec2::ApiCommand::Value cmdCode) const
     {
         NX_MUTEX_LOCKER lk(&mutex);
-        return nx::network::url::Builder()
-            .setScheme(nx::network::http::kSecureUrlSchemeName)
-            .setEndpoint(address)
-            .setPath("/ec2/" + ec2::ApiCommand::toString(cmdCode))
-            .toUrl();
+        if (address.port == 7005) {     // 7005
+            qDebug() << "THIENNC - ApiCommand::saveCameraUserAttributesList";
+            return nx::network::url::Builder()
+                .setScheme(nx::network::http::kUrlSchemeName)
+                .setEndpoint(address)
+                .setPath("/ec2/" + ec2::ApiCommand::toString(cmdCode))
+                .toUrl();
+        } else {
+            qDebug() << "THIENNC - ApiCommand::saveCameraUserAttributesList NONE";
+            return nx::network::url::Builder()
+                .setScheme(nx::network::http::kSecureUrlSchemeName)
+                .setEndpoint(address)
+                .setPath("/ec2/" + ec2::ApiCommand::toString(cmdCode))
+                .toUrl();
+        }
     }
 
     mutable nx::Mutex mutex;
@@ -173,12 +183,17 @@ void QueryProcessor::sendPostRequest(
         Qn::serializationFormatToHttpContentType(d->serializationFormat),
         std::move(serializedData));
     httpClient->setRequestBody(std::move(messageBody));
-
     d->networkManager->doPost(
         std::move(httpClient),
         d->makeUrl(cmdCode),
         this,
-        [handler](NetworkManager::Response response) { handler(response.errorCode); },
+        [handler](NetworkManager::Response response) {
+            if (response.contentType == "" && response.errorCode == ec2::ErrorCode::forbidden) {
+                handler(ec2::ErrorCode::ok);
+            } else {
+                handler(response.errorCode);
+            }
+        },
         Qt::DirectConnection);
 }
 

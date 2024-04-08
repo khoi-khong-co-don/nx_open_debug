@@ -264,10 +264,10 @@ Item
                             + ` <font color="${hotkeyColor}">(${hotkeyText})</font>`
                     }
                 }
-                Rectangle{
-                    anchors.fill: parent
-                    color: "red"
-                }
+//                Rectangle{
+//                    anchors.fill: parent
+//                    color: "red"
+//                }
             }
 
             MouseArea

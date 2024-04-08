@@ -22,6 +22,14 @@ extern "C"
 #include <libavformat/avio.h>
 };
 
+extern "C"
+{
+    #include "libavcodec/avcodec.h"
+    #include "libavformat/avformat.h"
+    #include "libavutil/pixfmt.h"
+    #include "libswscale/swscale.h"
+}
+
 struct AVPacket;
 struct AVCodecContext;
 struct AVFormatContext;
@@ -51,6 +59,7 @@ public:
     virtual void setStartTimeUs(qint64 startTimeUs);
     virtual qint64 endTime() const override;
     virtual QnAbstractMediaDataPtr getNextData() override;
+    virtual void getNextDataOryza(AVPacket** packet, AVCodecContext** pCodecCtx, AVFormatContext** pFormatCtx, qint64* time, std::string rtsp, qint64 *timeStamp) override;
 
     /**
      * Move current position in the archive according to time and findIFrame provided.
@@ -99,6 +108,9 @@ public:
 
     using BeforeOpenInputCallback = std::function<void(QnAviArchiveDelegate*)>;
     void setBeforeOpenInputCallback(BeforeOpenInputCallback callback);
+    virtual bool isServerOryza() override;
+    virtual bool isOpenedRTSP() override;
+    virtual void pauseRtsp() override {};
 private:
     qint64 packetTimestamp(const AVPacket& packet);
     void packetTimestamp(QnCompressedVideoData* video, const AVPacket& packet);

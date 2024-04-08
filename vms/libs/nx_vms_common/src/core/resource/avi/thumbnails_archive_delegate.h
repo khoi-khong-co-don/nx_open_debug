@@ -3,7 +3,13 @@
 #pragma once
 
 #include <core/resource/avi/avi_archive_delegate.h>
-
+extern "C"
+{
+    #include "libavcodec/avcodec.h"
+    #include "libavformat/avformat.h"
+    #include "libavutil/pixfmt.h"
+    #include "libswscale/swscale.h"
+}
 class NX_VMS_COMMON_API QnThumbnailsArchiveDelegate: public QnAbstractArchiveDelegate
 {
     Q_OBJECT;
@@ -11,6 +17,7 @@ public:
     QnThumbnailsArchiveDelegate(QnAbstractArchiveDelegatePtr baseDelegate);
 
     virtual QnAbstractMediaDataPtr getNextData() override;
+    virtual void getNextDataOryza(AVPacket** packet, AVCodecContext** pCodecCtx, AVFormatContext** pFormatCtx, qint64* time, std::string rtsp, qint64 *timeStamp) override;
     virtual bool open(
         const QnResourcePtr &resource,
         AbstractArchiveIntegrityWatcher* archiveIntegrityWatcher) override;
@@ -30,6 +37,10 @@ public:
 
     qint64 currentPosition() { return m_currentPos; }
 
+    virtual bool isServerOryza() override;
+
+    virtual bool isOpenedRTSP() override;
+    virtual void pauseRtsp() override {};
 private:
     qint64 m_currentPos;
     qint64 m_rangeStart;

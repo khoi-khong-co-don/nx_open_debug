@@ -140,7 +140,7 @@ SimpleMotionSearchListModel* SimpleMotionSearchWidget::motionModel() const
 
 QString SimpleMotionSearchWidget::placeholderText(bool /*constrained*/) const
 {
-    return makePlaceholderText(tr("No motion detected"),
+    return makePlaceholderText(tr("KHOI No motion detected"),
         tr("Try changing the filters or enable motion recording"));
 }
 

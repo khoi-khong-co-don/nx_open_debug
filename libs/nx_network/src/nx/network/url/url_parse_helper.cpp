@@ -25,6 +25,7 @@ SocketAddress getEndpoint(const nx::utils::Url& url, int defaultPort)
     qDebug() << nx::format("end point address: %1").arg(SocketAddress(
                                                             url.host().toStdString(),
                                                             static_cast<std::uint16_t>(url.port(defaultPort))));
+    qDebug() << nx::format("end point port:   %1").arg(defaultPort);
     return SocketAddress(
         url.host().toStdString(),
         static_cast<std::uint16_t>(url.port(defaultPort)));

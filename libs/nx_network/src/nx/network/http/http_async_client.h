@@ -240,7 +240,7 @@ public:
      * Response is valid only after signal responseReceived() has been emitted.
      * @return Can be NULL if no response has been received yet
      */
-    const Response* response() const;
+    Response* response() const;
     std::string contentType() const;
 
     /**
@@ -349,7 +349,8 @@ public:
 
     ssl::AdapterFunc setAdapterFunc(ssl::AdapterFunc adapterFunc);
     const ssl::AdapterFunc& adapterFunc() const;
-
+    std::string extractJson(std::string findStr, const std::string& json);
+    std::string getBearerTocken(std::string ipHost, std::string portHost, std::string api);
 private:
     enum class State
     {

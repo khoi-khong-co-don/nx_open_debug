@@ -43,7 +43,7 @@ void QnWorkbenchResourcesChangesWatcher::showWarningDialog(const QnResourceList&
 
     const auto extras = tr("The following %n items are not saved:", "", visibleResources.size());
     const auto icon = QnMessageBoxIcon::Critical;
-    const auto text = tr("Failed to save changes");
+    const auto text = tr("Failed to save changes THIENNC-CHECKER");
 
     QnMessageBox dialog(icon, text, extras,
         QDialogButtonBox::Ok, QDialogButtonBox::Ok,

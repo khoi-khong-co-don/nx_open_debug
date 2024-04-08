@@ -35,6 +35,7 @@ CrossSystemServerResource::CrossSystemServerResource(
 
 QString CrossSystemServerResource::rtspUrl() const
 {
+    qDebug() << "CrossSystemServerResource::rtspUrl";
     return nx::network::url::Builder()
         .setEndpoint(getPrimaryAddress())
         .setScheme(nx::network::rtsp::kSecureUrlSchemeName)

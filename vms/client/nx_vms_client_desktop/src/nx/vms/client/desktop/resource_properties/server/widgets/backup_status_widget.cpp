@@ -107,6 +107,7 @@ BackupStatusWidget::BackupStatusWidget(QWidget* parent):
     connect(runtimeInfoManager, &QnRuntimeInfoManager::runtimeInfoChanged, this,
         [this](const QnPeerRuntimeInfo& runtimeInfo)
         {
+        qDebug() << "Connect emit runtimeInfoChanged 1";
             if (!m_server || runtimeInfo.uuid != m_server->getId())
                 return;
 

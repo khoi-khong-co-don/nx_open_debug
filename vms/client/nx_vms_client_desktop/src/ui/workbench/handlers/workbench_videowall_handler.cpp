@@ -405,6 +405,7 @@ QnWorkbenchVideoWallHandler::QnWorkbenchVideoWallHandler(QObject *parent):
     connect(runtimeInfoManager(), &QnRuntimeInfoManager::runtimeInfoChanged, this,
         [this](const QnPeerRuntimeInfo &info)
         {
+            qDebug() << "Connect emit runtimeInfoChanged 4";
             /* Ignore own info change. */
             if (info.uuid == systemContext()->peerId())
                 return;

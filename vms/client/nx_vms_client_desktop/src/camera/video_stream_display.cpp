@@ -34,7 +34,6 @@ extern "C" {
 
 #include "buffered_frame_displayer.h"
 #include "gl_renderer.h"
-#include <opencv2/opencv.hpp>
 using namespace std::chrono;
 using namespace nx::vms::client::desktop;
 
@@ -455,12 +454,155 @@ void QnVideoStreamDisplay::flushReverseBlock(
     dec->resetDecoder(data);
 }
 
+QnVideoStreamDisplay::FrameDisplayStatus QnVideoStreamDisplay::displayOryza(
+        AVPacket* packet, AVCodecContext *pCodecCtx, int64_t timestamp)
+{
+        AVFrame *pFrame;
+        pFrame = av_frame_alloc();
+        int ret, got_picture;
+        if (packet->stream_index == 0) {
+            ret = avcodec_decode_video2(pCodecCtx, pFrame, &got_picture,packet);
+            if (got_picture)
+            {
+                QImage image1(pFrame->data[0],
+                        pCodecCtx->width,
+                        pCodecCtx->height,
+                        QImage::Format_RGB888);
+            }
+
+        }
+        CLVideoDecoderOutput outFrame(pFrame->width, pFrame->height, pFrame->format);
+        outFrame.copyDataOnlyFrom(pFrame);
+
+
+
+        if (ini().disableVideoRendering)
+            return Status_Displayed;
+
+        {
+            //  Clear previos frame, since decoder clear it on decode call
+            NX_MUTEX_LOCKER lock(&m_mtx);
+            if (m_lastDisplayedFrame && m_lastDisplayedFrame->isExternalData())
+                m_lastDisplayedFrame.reset();
+        }
+        updateRenderList();
+
+        // use only 1 frame for non selected video
+        const bool reverseMode = m_reverseMode;
+
+
+        const bool needReinitDecoders = m_needReinitDecoders.exchange(false);
+
+        if (qAbs(m_speed - 1.0) < FPS_EPS && m_canUseBufferedFrameDisplayer)
+        {
+            /// không vào
+            if (!m_bufferedFrameDisplayer)
+            {
+                m_bufferedFrameDisplayer = std::make_unique<QnBufferedFrameDisplayer>();
+                m_bufferedFrameDisplayer->setRenderList(m_renderList);
+                m_queueWasFilled = false;
+            }
+        }
+        else
+        {
+            if (m_bufferedFrameDisplayer)
+            {
+                m_bufferedFrameDisplayer->waitForFramesDisplayed();
+                //overrideTimestampOfNextFrameToRender(m_bufferedFrameDisplayer->getTimestampOfNextFrameToRender());
+                //NX_MUTEX_LOCKER lock( &m_timeMutex );
+                m_bufferedFrameDisplayer.reset();
+            }
+        }
+
+        if (needReinitDecoders)
+        {
+            // không vào
+            NX_MUTEX_LOCKER lock(&m_mtx);
+            if (m_decoderData.decoder)
+                m_decoderData.decoder->setMultiThreadDecodePolicy(toEncoderPolicy(m_mtDecoding));
+        }
+
+
+        if (reverseMode != m_prevReverseMode || m_needResetDecoder)
+        {
+            // không vào
+            clearReverseQueue();
+            NX_MUTEX_LOCKER lock( &m_mtx );
+            if (reverseMode != m_prevReverseMode)
+                m_decoderData.decoder.reset();
+
+            m_prevReverseMode = reverseMode;
+        }
+
+        QnAbstractVideoDecoder* dec = nullptr;
+        {
+            NX_MUTEX_LOCKER lock(&m_mtx);
+            dec = m_decoderData.decoder.get();
+
+
+            auto decoderResolution = dec ? QSize(dec->getWidth(), dec->getHeight()) : QSize();
+
+            {
+
+//                qDebug() << "QnVideoStreamDisplay::displayOryza 8";
+//                m_decoderData.decoder.reset();
+//                m_decoderData.decoder.reset(dec);
+//                m_needResetDecoder = false;
+            }
+        }
+
+        if (m_needResetDecoder)
+        {
+            // không vào
+            NX_MUTEX_LOCKER lock(&m_mtx);
+            m_needResetDecoder = false;
+        }
+
+        m_mtx.lock();
+
+
+
+
+        CLVideoDecoderOutputPtr outFrameptr(new CLVideoDecoderOutput(pFrame->width, pFrame->height, pFrame->format));
+        outFrameptr->copyDataOnlyFrom(pFrame);
+        outFrameptr->pkt_dts = timestamp;
+
+        m_lastDisplayedFrame = outFrameptr;
+        m_mtx.unlock();
+        m_rawDataSize = QSize(outFrameptr->width,outFrameptr->height);
+        if (outFrameptr->width)
+        {
+            if (!m_overridenAspectRatio.isValid())
+            {
+                QSize imageSize(outFrameptr->width , outFrameptr->height);
+                NX_MUTEX_LOCKER lock( &m_imageSizeMtx );
+                m_imageSize = imageSize;
+            }
+            else
+            {
+                QSize imageSize(outFrameptr->height*m_overridenAspectRatio.toFloat(),
+                    outFrameptr->height);
+                NX_MUTEX_LOCKER lock( &m_imageSizeMtx );
+                m_imageSize = imageSize;
+            }
+        }
+
+
+
+//        calcSampleAR(outFrameptr, dec);
+        if (processDecodedFrame(dec, outFrameptr))
+        {
+            return Status_Displayed;
+        }
+        else
+            return Status_Buffered;
+}
+
 QnVideoStreamDisplay::FrameDisplayStatus QnVideoStreamDisplay::display(
     QnCompressedVideoDataPtr data, bool draw, QnFrameScaler::DownscaleFactor forceScaleFactor)
 {
     if (ini().disableVideoRendering)
         return Status_Displayed;
-
     {
         //  Clear previos frame, since decoder clear it on decode call
         NX_MUTEX_LOCKER lock(&m_mtx);
@@ -473,10 +615,13 @@ QnVideoStreamDisplay::FrameDisplayStatus QnVideoStreamDisplay::display(
     const bool reverseMode = m_reverseMode;
 
     if (reverseMode)
+    {
         m_lastIgnoreTime = AV_NOPTS_VALUE;
+    }
     else if (!draw)
+    {
         m_lastIgnoreTime = data->timestamp;
-
+    }
 
     m_isLive = data->flags.testFlag(QnAbstractMediaData::MediaFlags_LIVE);
     const bool needReinitDecoders = m_needReinitDecoders.exchange(false);
@@ -633,12 +778,13 @@ QnVideoStreamDisplay::FrameDisplayStatus QnVideoStreamDisplay::display(
         return Status_Skipped;
     else if (m_lastIgnoreTime != (qint64)AV_NOPTS_VALUE && decodedFrame->pkt_dts <= m_lastIgnoreTime)
         return Status_Skipped;
-
+    // có thể chỗ này copy decodedFrame sang outFrame
     if (!downscaleOrForward(decodedFrame, outFrame, forceScaleFactor))
         return Status_Displayed;
 
     if (reverseMode)
     {
+        //////////// không vào này ///////////////////////////
         if (outFrame->flags.testFlag(QnAbstractMediaData::MediaFlags_ReverseBlockStart))
             reorderPrevFrames();
         m_reverseQueue.enqueue(outFrame);
@@ -663,10 +809,11 @@ QnVideoStreamDisplay::FrameDisplayStatus QnVideoStreamDisplay::display(
         NX_MUTEX_LOCKER lock(&m_mtx);
         m_lastDisplayedFrame = outFrame;
     }
-
     calcSampleAR(outFrame, dec);
     if (processDecodedFrame(dec, outFrame))
+    {
         return Status_Displayed;
+    }
     else
         return Status_Buffered;
 }
@@ -758,7 +905,6 @@ bool QnVideoStreamDisplay::processDecodedFrame(
 {
     if (outFrame->isEmpty())
         return false;
-
     if (m_isLive && outFrame->memoryType() != MemoryType::VideoMemory)
     {
         auto camera = m_resource->toResourcePtr();
@@ -774,13 +920,13 @@ bool QnVideoStreamDisplay::processDecodedFrame(
         const qint64 bufferedDuration = m_bufferedFrameDisplayer->bufferedDuration();
         if (wasWaiting)
         {
-            decoder->setLightCpuMode(QnAbstractVideoDecoder::DecodeMode_Full);
+//            decoder->setLightCpuMode(QnAbstractVideoDecoder::DecodeMode_Full);
             m_queueWasFilled = true;
         }
         else
         {
-            if (m_queueWasFilled && bufferedDuration <= kMaxQueueTime / 4)
-                decoder->setLightCpuMode(QnAbstractVideoDecoder::DecodeMode_Fast);
+//            if (m_queueWasFilled && bufferedDuration <= kMaxQueueTime / 4)
+//                decoder->setLightCpuMode(QnAbstractVideoDecoder::DecodeMode_Fast);
         }
     }
     else

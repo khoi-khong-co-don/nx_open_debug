@@ -3,7 +3,7 @@
 #pragma once
 
 #include <optional>
-
+#include <QObject>
 #include <QtCore/QQueue>
 
 #include <nx/streaming/abstract_archive_stream_reader.h>
@@ -13,9 +13,25 @@
 #include <nx/utils/thread/wait_condition.h>
 #include <nx/vms/api/types/storage_location.h>
 #include <recording/playbackmask_helper.h>
-
+#include "rtsp_client_archive_delegate.h"
 #include "motion/metadata_multiplexer.h"
+#include "./Logger_KhoiVH.h"
+#include <boost/asio.hpp>
+#include <boost/beast.hpp>
+namespace http = boost::beast::http;
+namespace beast = boost::beast;
+namespace http = beast::http;
+namespace websocket = beast::websocket;
+namespace net = boost::asio;
+using tcp = boost::asio::ip::tcp;
 
+extern "C"
+{
+    #include "libavcodec/avcodec.h"
+    #include "libavformat/avformat.h"
+    #include "libavutil/pixfmt.h"
+    #include "libswscale/swscale.h"
+}
 // Private.
 class FrameTypeExtractor;
 
@@ -109,6 +125,7 @@ public:
     virtual bool isMediaPaused() const override;
     virtual void resumeMedia() override;
     virtual QnAbstractMediaDataPtr getNextData() override;
+    virtual void getNextDataOryza(AVPacket** packet, AVCodecContext** pCodecCtx, AVFormatContext** pFormatCtx, qint64* time, std::string rtsp, qint64 *timeStamp) override;
 
     virtual bool setStreamDataFilter(nx::vms::api::StreamDataFilters filter) override;
     virtual nx::vms::api::StreamDataFilters streamDataFilter() const override;
@@ -177,7 +194,18 @@ public:
 
     void reopen();
     bool isJumpProcessing() const;
-
+    QnResourcePtr getErsourcePtr(){return cameraResource;};
+    void callAPIStream(std::string ipHost, std::string portHost);
+    std::string extractJson(std::string findStr, const std::string& json);
+    bool isPause = false;
+    void getTimeRecorded();
+    std::string ConvertTimeToUrlFormat(std::string time);
+    std::string ConvertTimeStampToTime(int64_t timestamp);
+    std::string getBearerTocken(std::string ipHost, std::string portHost, std::string api);
+    void parseJson(QString json);
+    long long rfc3339_to_microseconds(const std::string& rfc3339);
+    bool isTimeRecordedInRange(int64_t timeToCheck, int64_t& nearestStartTime, std::string& time);
+    bool isTimeInRange(int64_t timeToCheck, int64_t startTime, int64_t endTime);
 protected:
     virtual bool init();
 
@@ -215,6 +243,20 @@ private:
 
 private slots:
 private:
+    struct TimeRecorded {
+        int64_t startTimeMs;
+        int64_t durationMs;
+        int64_t endTimeMs;
+        std::string startTimerfc3339;
+    };
+    QList<TimeRecorded> m_timeRecordedList;
+    QMutex m_qmutex;
+    qint64 jumpTime;
+    std::string m_mainRTSP, m_subRTSP;
+    int m_numWidget = 0;
+    bool m_runSubStream = false;
+    bool m_isResume = false;
+    QnResourcePtr cameraResource;
     unsigned m_selectedAudioChannel;
     bool m_eof;
     FrameTypeExtractor* m_frameTypeExtractor;
@@ -222,6 +264,7 @@ private:
     QVector<int> m_audioCodecs;
     bool m_IFrameAfterJumpFound;
     qint64 m_requiredJumpTime;
+    qint64 m_lastRequiredJumpTime;
     bool m_lastUsePreciseSeek;
     QString m_onDestroyFileName;
     bool m_BOF;
@@ -278,6 +321,7 @@ private:
     void internalJumpTo(qint64 mksec);
     bool getNextVideoPacket();
     QnAbstractMediaDataPtr getNextPacket();
+    void getNextPacketOryza(AVPacket** packet, AVCodecContext** pCodecCtx, AVFormatContext** pFormatCtx, qint64* time, std::string rtsp, qint64 *timeStamp);
     void channeljumpToUnsync(qint64 mksec, int channel, qint64 skipTime);
     void setSkipFramesToTime(qint64 skipFramesToTime, bool keepLast);
     std::function<void()> m_endOfPlaybackHandler;

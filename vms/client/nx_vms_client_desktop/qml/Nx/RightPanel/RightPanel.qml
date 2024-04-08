@@ -50,7 +50,6 @@ TabControl
             focusFrameEnabled: false
             icon.source: "qrc:/skin/events/tabs/motion.png"
             text: qsTr("Motion")
-            color: "red"
         }
 
         Item

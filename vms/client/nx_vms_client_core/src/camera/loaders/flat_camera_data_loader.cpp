@@ -148,6 +148,8 @@ rest::Handle QnFlatCameraDataLoader::sendRequest(qint64 startTimeMs, qint64 reso
         nx::utils::guarded(this,
             [this](bool success, rest::Handle handle, const MultiServerPeriodDataList& timePeriods)
             {
+//                qDebug() << nx::format("QnFlatCameraDataLoader::sendRequest guid: %1").arg(timePeriods[0].guid);
+                qDebug() << "QnFlatCameraDataLoader::sendRequest";
                 at_timePeriodsReceived(success, handle, timePeriods);
             }), thread());
 }
@@ -171,8 +173,8 @@ void QnFlatCameraDataLoader::at_timePeriodsReceived(bool success,
     {
         rawPeriods.push_back(period.periods);
         NX_VERBOSE(this, "Received\n%1", periodsLogString(period.periods));
+        qDebug() << nx::format("Received Period -> %1").arg(periodsLogString(period.periods));
     }
-
     QnTimePeriodList periods(QnTimePeriodList::mergeTimePeriods(rawPeriods));
 
     NX_VERBOSE(this, "Merged\n%1", periodsLogString(periods));
@@ -188,10 +190,14 @@ void QnFlatCameraDataLoader::handleDataLoaded(
         m_loading.startTimeMs,
         nx::utils::timestampToDebugString(m_loading.startTimeMs),
         filterRepresentation(m_filter, m_dataType));
+    qDebug() << nx::format("Loaded data for %1 (%2), actual filter %3").args(        m_loading.startTimeMs,
+                                                                                     nx::utils::timestampToDebugString(m_loading.startTimeMs),
+                                                                                     filterRepresentation(m_filter, m_dataType));
 
     if (!success)
     {
         NX_VERBOSE(this, "Load Failed");
+        qDebug() << "Load failed";
         emit failed(m_loading.handle);
         m_loading = LoadingInfo();
         return;
@@ -201,6 +207,7 @@ void QnFlatCameraDataLoader::handleDataLoaded(
     {
         m_loadedData = periods;
         NX_VERBOSE(this, "First dataset received, size %1", periods.size());
+        qDebug() << nx::format("first dataset received, size %1").arg(periods.size());
     }
     else if (!periods.empty())
     {
@@ -208,11 +215,14 @@ void QnFlatCameraDataLoader::handleDataLoaded(
             "New dataset received (size %1), merging with existing (size %2).",
             periods.size(),
             m_loadedData.size());
+        qDebug() << nx::format("New dataset received (size %1), merging with existing (size %2).").args(            periods.size(),
+                                                                                                                    m_loadedData.size());
 
         QnTimePeriodList::overwriteTail(m_loadedData, periods, m_loading.startTimeMs);
         NX_VERBOSE(this, "Merging finished, size %1.", m_loadedData.size());
+        qDebug() << nx::format("Merging finished, size %1.").arg(m_loadedData.size());
     }
-
+    qDebug() << "Emit Ready m_loadding";
     emit ready(m_loading.startTimeMs);
     m_loading = LoadingInfo();
 }

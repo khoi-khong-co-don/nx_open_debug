@@ -183,4 +183,5 @@ GridView
 
     onCellWidthChanged:
         d.resetAutomaticRowHeight()
+
 }

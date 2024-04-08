@@ -43,17 +43,30 @@ NetworkManager::Response parseResponse(AsyncClient* client)
 {
     NetworkManager::Response result;
 
+    qDebug() << "THIENNC CHECK parseResponse 1";
     if (client->failed() || !client->response())
     {
         result.errorCode = ec2::ErrorCode::ioError;
         return result;
     }
+    qDebug() << "THIENNC CHECK parseResponse 2";
 
     result.statusLine = client->response()->statusLine;
     result.headers = client->response()->headers;
     result.messageBody = client->fetchMessageBodyBuffer();
     result.errorCode = parseErrorCode(client->response());
     result.contentType = client->contentType();
+
+    qDebug() << nx::format("THIENNC - parseResponse: [1]%1 - [2]%2 - [3]%3 - [4]%4 - [5]%5")
+                    .arg(result.statusLine)
+                    .arg(result.headers)
+                    .arg(result.messageBody)
+                    .arg(result.errorCode)
+                    .arg(result.contentType);
+
+    if (result.errorCode == ec2::ErrorCode::forbidden)
+        qDebug() << nx::format("THIENNC - FORBIDDEN RES: %1").arg(result);
+
     return result;
 }
 
@@ -148,9 +161,11 @@ void NetworkManager::doRequest(
     Qt::ConnectionType connectionType)
 {
     NX_VERBOSE(this, "[%1] %2", method, url);
+    qDebug() << nx::format("doRequest digestAuthen : [%1] <--> %2").args(method, url);
     NX_ASSERT(url.userName().isEmpty(), "Credentials must be set explicitly");
     if (request->credentials().authToken.empty() && !url.userName().isEmpty())
     {
+        qDebug() << "Set username password";
         request->setCredentials(nx::network::http::PasswordCredentials(
             url.userName().toStdString(), url.password().toStdString()));
         url.setUserName(QString());
@@ -177,10 +192,12 @@ void NetworkManager::doRequest(
         [callback, reqId]
             (int requestId, Response response)
         {
+            qDebug() << nx::format("Response: %1").arg(response);
             if (reqId == requestId)
                 callback(response);
         }, connectionType);
 
+    // qDebug() << nx::format("THIENNC - ABC: %1").arg(connectionType);
     // Sending request under mutex to be sure reply is not handled before we store context.
     NX_MUTEX_LOCKER lk(&d->mutex);
     context.client->doRequest(method, url);

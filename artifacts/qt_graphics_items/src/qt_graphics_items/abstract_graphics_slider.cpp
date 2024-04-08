@@ -183,9 +183,15 @@ void AbstractGraphicsSlider::setSliderDown(bool down)
     if (doEmit)
     {
         if (down)
+        {
+            qDebug() << "AbstractGraphicsSlider::setSliderDown sliderPressed";
             Q_EMIT sliderPressed();
+        }
         else
+        {
+            qDebug() << "AbstractGraphicsSlider::setSliderDown sliderReleased";
             Q_EMIT sliderReleased();
+        }
     }
 
     if (!down && d->position != d->value)

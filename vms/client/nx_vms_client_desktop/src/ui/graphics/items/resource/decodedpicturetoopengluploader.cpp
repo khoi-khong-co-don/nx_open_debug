@@ -7,7 +7,7 @@
 
 extern "C"
 {
-    #include <libavcodec/avcodec.h>
+#include <libavcodec/avcodec.h>
 }
 
 #include <QtCore/QRunnable>
@@ -38,16 +38,16 @@ extern "C"
 
 namespace
 {
-    const int ROUND_COEFF = 8;
+const int ROUND_COEFF = 8;
 
-    int minPow2(int value)
-    {
-        int result = 1;
-        while (value > result)
-            result <<= 1;
+int minPow2(int value)
+{
+    int result = 1;
+    while (value > result)
+        result <<= 1;
 
-        return result;
-    }
+    return result;
+}
 } // anonymous namespace
 
 #ifdef _WIN32
@@ -70,9 +70,9 @@ class BitrateCalculator
 {
 public:
     BitrateCalculator()
-    :
-        m_startCalcTick( 0 ),
-        m_bytes( 0 )
+        :
+          m_startCalcTick( 0 ),
+          m_bytes( 0 )
     {
     }
 
@@ -84,10 +84,10 @@ public:
         if( currentTick - m_startCalcTick > 5000 )
         {
             NX_DEBUG(this,
-                nx::format("In previous %1 ms to video mem moved %2 Mb. Transfer rate %3 Mb/second.")
-                    .arg(currentTick - m_startCalcTick)
-                    .arg(m_bytes / 1000000.0)
-                    .arg(m_bytes / 1000.0 / (currentTick - m_startCalcTick)));
+                     nx::format("In previous %1 ms to video mem moved %2 Mb. Transfer rate %3 Mb/second.")
+                     .arg(currentTick - m_startCalcTick)
+                     .arg(m_bytes / 1000000.0)
+                     .arg(m_bytes / 1000.0 / (currentTick - m_startCalcTick)));
             m_startCalcTick = currentTick;
             m_bytes = 0;
         }
@@ -170,17 +170,17 @@ public:
     bool usingShaderYuvToRgb() const
     {
         return
-            !(functions->features() & QnGlFunctions::ShadersBroken)
-            && yv12SharedUsed
-            && !forceSoftYUV;
+                !(functions->features() & QnGlFunctions::ShadersBroken)
+                && yv12SharedUsed
+                && !forceSoftYUV;
     }
 
     bool usingShaderNV12ToRgb() const
     {
         return
-            !(functions->features() & QnGlFunctions::ShadersBroken)
-            && nv12SharedUsed
-            && !forceSoftYUV;
+                !(functions->features() & QnGlFunctions::ShadersBroken)
+                && nv12SharedUsed
+                && !forceSoftYUV;
     }
 
 private:
@@ -190,9 +190,9 @@ private:
         size_t size;
 
         Filler()
-        :
-            data( nullptr ),
-            size( 0 )
+            :
+              data( nullptr ),
+              size( 0 )
         {
         }
     };
@@ -215,16 +215,16 @@ class QnGlRendererTexture {
 
 public:
     QnGlRendererTexture( const QSharedPointer<DecodedPictureToOpenGLUploaderPrivate>& renderer )
-    :
-        m_allocated(false),
-        m_pixelSize(-1),
-        m_internalFormat(-1),
-        m_internalFormatPixelSize(-1),
-        m_fillValue(-1),
-        m_textureSize(QSize(0, 0)),
-        m_contentSize(QSize(0, 0)),
-        m_id(std::numeric_limits<GLuint>::max()),
-        m_renderer(renderer)
+        :
+          m_allocated(false),
+          m_pixelSize(-1),
+          m_internalFormat(-1),
+          m_internalFormatPixelSize(-1),
+          m_fillValue(-1),
+          m_textureSize(QSize(0, 0)),
+          m_contentSize(QSize(0, 0)),
+          m_id(std::numeric_limits<GLuint>::max()),
+          m_renderer(renderer)
     {}
 
     ~QnGlRendererTexture() {
@@ -257,9 +257,9 @@ public:
         QSize contentSize = QSize(stride, height);
 
         if( m_contentSize == contentSize
-            && m_pixelSize == pixelSize
-            && m_internalFormat == internalFormat
-            && m_fillValue == fillValue )
+                && m_pixelSize == pixelSize
+                && m_internalFormat == internalFormat
+                && m_fillValue == fillValue )
         {
             return false;
         }
@@ -270,9 +270,9 @@ public:
         m_contentSize = contentSize;
 
         QSize textureSize = QSize(
-            m_renderer->supportsNonPower2Textures ? qPower2Ceil((unsigned)stride / pixelSize, ROUND_COEFF) : minPow2(stride / pixelSize),
-            m_renderer->supportsNonPower2Textures ? height                                   : minPow2(height)
-        );
+                    m_renderer->supportsNonPower2Textures ? qPower2Ceil((unsigned)stride / pixelSize, ROUND_COEFF) : minPow2(stride / pixelSize),
+                    m_renderer->supportsNonPower2Textures ? height                                   : minPow2(height)
+                                                            );
 
         bool result = false;
         if(m_textureSize.width() != textureSize.width() || m_textureSize.height() != textureSize.height() || m_internalFormat != internalFormat) {
@@ -317,29 +317,29 @@ public:
                 //NX_ASSERT( textureSize == QSize(textureWidth, textureHeight) );
 
                 m_renderer->glTexSubImage2D(
-                    GL_TEXTURE_2D,
-                    0,
-                    roundedWidth,
-                    0,
-                    qMin(ROUND_COEFF, textureSize.width() - roundedWidth),
-                    textureSize.height(),
-                    internalFormat,
-                    GL_UNSIGNED_BYTE,
-                    filler );
+                            GL_TEXTURE_2D,
+                            0,
+                            roundedWidth,
+                            0,
+                            qMin(ROUND_COEFF, textureSize.width() - roundedWidth),
+                            textureSize.height(),
+                            internalFormat,
+                            GL_UNSIGNED_BYTE,
+                            filler );
                 bitrateCalculator.bytesProcessed( qMin(ROUND_COEFF, textureSize.width() - roundedWidth)*textureSize.height()*internalFormatPixelSize );
             }
 
             if (height < textureSize.height()) {
                 m_renderer->glTexSubImage2D(
-                    GL_TEXTURE_2D,
-                    0,
-                    0,
-                    height,
-                    textureSize.width(),
-                    qMin(ROUND_COEFF, textureSize.height() - height),
-                    internalFormat,
-                    GL_UNSIGNED_BYTE,
-                    filler );
+                            GL_TEXTURE_2D,
+                            0,
+                            0,
+                            height,
+                            textureSize.width(),
+                            qMin(ROUND_COEFF, textureSize.height() - height),
+                            internalFormat,
+                            GL_UNSIGNED_BYTE,
+                            filler );
                 bitrateCalculator.bytesProcessed( textureSize.width()*qMin(ROUND_COEFF, textureSize.height() - height)*internalFormatPixelSize );
             }
         }
@@ -396,8 +396,8 @@ class QnGlRendererTexturePack
 {
 public:
     QnGlRendererTexturePack( const QSharedPointer<DecodedPictureToOpenGLUploaderPrivate>& renderer )
-    :
-        m_format( AV_PIX_FMT_NONE )
+        :
+          m_format( AV_PIX_FMT_NONE )
     {
         //TODO/IMPL allocate textures when needed, because not every format require 3 planes
         for( size_t i = 0; i < MAX_PLANE_COUNT; ++i )
@@ -448,9 +448,9 @@ private:
 // DecodedPictureToOpenGLUploader::UploadedPicture
 //////////////////////////////////////////////////////////
 DecodedPictureToOpenGLUploader::UploadedPicture::PBOData::PBOData()
-:
-    id( std::numeric_limits<GLuint>::max() ),
-    sizeBytes( 0 )
+    :
+      id( std::numeric_limits<GLuint>::max() ),
+      sizeBytes( 0 )
 {
 }
 
@@ -511,11 +511,11 @@ const ImageCorrectionResult& DecodedPictureToOpenGLUploader::UploadedPicture::im
 }
 
 void DecodedPictureToOpenGLUploader::UploadedPicture::processImage(
-    quint8* yPlane,
-    int width,
-    int height,
-    int stride,
-    const nx::vms::api::ImageCorrectionData& data)
+        quint8* yPlane,
+        int width,
+        int height,
+        int stride,
+        const nx::vms::api::ImageCorrectionData& data)
 {
     m_imgCorrection.analyseImage(yPlane, width, height, stride, data, m_displayedRect);
 }
@@ -531,16 +531,16 @@ int DecodedPictureToOpenGLUploader::UploadedPicture::flags() const
 }
 
 DecodedPictureToOpenGLUploader::UploadedPicture::UploadedPicture( DecodedPictureToOpenGLUploader* const uploader )
-:
-    m_colorFormat( AV_PIX_FMT_NONE ),
-    m_width( 0 ),
-    m_height( 0 ),
-    m_sequence( 0 ),
-    m_pts( 0 ),
-    m_skippingForbidden( false ),
-    m_flags( 0 ),
-    m_displayedRect( 0.0, 0.0, 1.0, 1.0 ),
-    m_texturePack( new QnGlRendererTexturePack(uploader->d) )
+    :
+      m_colorFormat( AV_PIX_FMT_NONE ),
+      m_width( 0 ),
+      m_height( 0 ),
+      m_sequence( 0 ),
+      m_pts( 0 ),
+      m_skippingForbidden( false ),
+      m_flags( 0 ),
+      m_displayedRect( 0.0, 0.0, 1.0, 1.0 ),
+      m_texturePack( new QnGlRendererTexturePack(uploader->d) )
 {
 }
 
@@ -555,9 +555,9 @@ DecodedPictureToOpenGLUploader::UploadedPicture::~UploadedPicture()
 // DecodedPictureToOpenGLUploader::ScopedPictureLock
 //////////////////////////////////////////////////////////
 DecodedPictureToOpenGLUploader::ScopedPictureLock::ScopedPictureLock( const DecodedPictureToOpenGLUploader& uploader )
-:
-    m_uploader( uploader ),
-    m_picture( uploader.getUploadedPicture() )
+    :
+      m_uploader( uploader ),
+      m_picture( uploader.getUploadedPicture() )
 {
 }
 
@@ -597,16 +597,16 @@ class AVPacketUploader: public QRunnable
 {
 public:
     AVPacketUploader(
-        DecodedPictureToOpenGLUploader::UploadedPicture* const dest,
-        const CLConstVideoDecoderOutputPtr& src,
-        DecodedPictureToOpenGLUploader* uploader )
-    :
-        m_dest( dest ),
-        m_src( src ),
-        m_uploader( uploader ),
-        m_isRunning( false ),
-        m_done( false ),
-        m_success( false )
+            DecodedPictureToOpenGLUploader::UploadedPicture* const dest,
+            const CLConstVideoDecoderOutputPtr& src,
+            DecodedPictureToOpenGLUploader* uploader )
+        :
+          m_dest( dest ),
+          m_src( src ),
+          m_uploader( uploader ),
+          m_isRunning( false ),
+          m_done( false ),
+          m_success( false )
     {
         setAutoDelete( false );
     }
@@ -677,11 +677,11 @@ private:
 // DecodedPicturesDeleter
 //////////////////////////////////////////////////////////
 class DecodedPicturesDeleter: public QRunnable
-    {
+{
 public:
     DecodedPicturesDeleter( DecodedPictureToOpenGLUploader* uploader )
-    :
-        m_uploader( uploader )
+        :
+          m_uploader( uploader )
     {
         setAutoDelete( true );
     }
@@ -701,21 +701,21 @@ private:
 //////////////////////////////////////////////////////////
 
 //TODO/IMPL minimize blocking in \a DecodedPictureToOpenGLUploader::uploadDataToGl method:
-    //before calling this method we can check that it would not block and take another task if it would
+//before calling this method we can check that it would not block and take another task if it would
 
 DecodedPictureToOpenGLUploader::DecodedPictureToOpenGLUploader(
-    QOpenGLWidget* glWidget,
-    unsigned int /*asyncDepth*/ )
-:
-    d(new DecodedPictureToOpenGLUploaderPrivate(glWidget)),
-    m_yuv2rgbBuffer( nullptr ),
-    m_yuv2rgbBufferLen( 0 ),
-    m_painterOpacity( 1.0 ),
-    m_previousPicSequence( 1 ),
-    m_terminated( false ),
-    m_rgbaBuf( nullptr ),
-    m_fileNumber( 0 ),
-    m_hardwareDecoderUsed( false )
+        QOpenGLWidget* glWidget,
+        unsigned int /*asyncDepth*/ )
+    :
+      d(new DecodedPictureToOpenGLUploaderPrivate(glWidget)),
+      m_yuv2rgbBuffer( nullptr ),
+      m_yuv2rgbBufferLen( 0 ),
+      m_painterOpacity( 1.0 ),
+      m_previousPicSequence( 1 ),
+      m_terminated( false ),
+      m_rgbaBuf( nullptr ),
+      m_fileNumber( 0 ),
+      m_hardwareDecoderUsed( false )
 {
     //const int textureQueueSize = asyncDepth+MIN_GL_PIC_BUF_COUNT;
     const int textureQueueSize = 1;
@@ -771,12 +771,12 @@ void DecodedPictureToOpenGLUploader::pleaseStop()
 }
 
 void DecodedPictureToOpenGLUploader::uploadDecodedPicture(
-    const CLConstVideoDecoderOutputPtr& decodedPicture,
-    const QRectF displayedRect,
-    const QSize& onScreenSize)
+        const CLConstVideoDecoderOutputPtr& decodedPicture,
+        const QRectF displayedRect,
+        const QSize& onScreenSize)
 {
     NX_VERBOSE(this,
-        nx::format("Uploading decoded picture to gl textures. dts %1").arg(decodedPicture->pkt_dts));
+               nx::format("Uploading decoded picture to gl textures. dts %1").arg(decodedPicture->pkt_dts));
 
     //m_hardwareDecoderUsed = decodedPicture->flags & QnAbstractMediaData::MediaFlags_HWDecodingUsed;
 
@@ -800,58 +800,72 @@ void DecodedPictureToOpenGLUploader::uploadDecodedPicture(
                 emptyPictureBuf = m_renderedPictures.front();
                 m_renderedPictures.pop_front();
                 NX_VERBOSE(this,
-                    nx::format("Taking (1) rendered picture (pts %1) buffer for upload (pts %2). (%3, %4)")
-                        .arg(emptyPictureBuf->pts())
-                        .arg(decodedPicture->pkt_dts)
-                        .arg(m_renderedPictures.size())
-                        .arg(m_picturesWaitingRendering.size()));
+                           nx::format("Taking (1) rendered picture (pts %1) buffer for upload (pts %2). (%3, %4)")
+                           .arg(emptyPictureBuf->pts())
+                           .arg(decodedPicture->pkt_dts)
+                           .arg(m_renderedPictures.size())
+                           .arg(m_picturesWaitingRendering.size()));
+
             }
             else if( !m_emptyBuffers.empty() )
             {
                 emptyPictureBuf = m_emptyBuffers.front();
                 m_emptyBuffers.pop_front();
+                qDebug() << "Found empty buffer";
                 NX_DEBUG(this, "Found empty buffer");
             }
             else if((!m_renderedPictures.empty()))  //reserving one uploaded picture (preferring picture
-                                                    //which has not been shown yet) so that renderer always
-                                                    //gets something to draw...
+                //which has not been shown yet) so that renderer always
+                //gets something to draw...
             {
                 //selecting oldest rendered picture
                 emptyPictureBuf = m_renderedPictures.front();
                 m_renderedPictures.pop_front();
                 NX_DEBUG(this,
-                    nx::format("Taking (2) rendered picture (pts %1) buffer for upload (pts %2). (%3, %4)")
-                        .arg(emptyPictureBuf->pts())
-                        .arg(decodedPicture->pkt_dts)
-                        .arg(m_renderedPictures.size())
-                        .arg(m_picturesWaitingRendering.size()));
+                         nx::format("Taking (2) rendered picture (pts %1) buffer for upload (pts %2). (%3, %4)")
+                         .arg(emptyPictureBuf->pts())
+                         .arg(decodedPicture->pkt_dts)
+                         .arg(m_renderedPictures.size())
+                         .arg(m_picturesWaitingRendering.size()));
+
+
             }
             else if( ((!m_picturesWaitingRendering.empty()))
-                      && !m_picturesWaitingRendering.front()->m_skippingForbidden )
+                     && !m_picturesWaitingRendering.front()->m_skippingForbidden )
             {
                 //looks like rendering does not catch up with decoding. Ignoring oldest decoded frame...
                 emptyPictureBuf = m_picturesWaitingRendering.front();
                 m_picturesWaitingRendering.pop_front();
                 NX_DEBUG(this,
-                    nx::format("Ignoring uploaded frame with pts %1. Playback does not catch up with uploading. (%2, %3)...")
-                        .arg(emptyPictureBuf->pts())
-                        .arg(m_renderedPictures.size())
-                        .arg(m_picturesWaitingRendering.size()));
+                         nx::format("Ignoring uploaded frame with pts %1. Playback does not catch up with uploading. (%2, %3)...")
+                         .arg(emptyPictureBuf->pts())
+                         .arg(m_renderedPictures.size())
+                         .arg(m_picturesWaitingRendering.size()));
+                qDebug() <<                          nx::format("Ignoring uploaded frame with pts %1. Playback does not catch up with uploading. (%2, %3)...")
+                                                     .arg(emptyPictureBuf->pts())
+                                                     .arg(m_renderedPictures.size())
+                                                     .arg(m_picturesWaitingRendering.size());
+
             }
             else if(!m_framesWaitingUploadInGUIThread.empty() )
             {
                 for( std::deque<AVPacketUploader*>::iterator
-                    it = m_framesWaitingUploadInGUIThread.begin();
-                    it != m_framesWaitingUploadInGUIThread.end();
-                    ++it )
+                     it = m_framesWaitingUploadInGUIThread.begin();
+                     it != m_framesWaitingUploadInGUIThread.end();
+                     ++it )
                 {
                     if( (*it)->isRunning() || (*it)->picture()->m_skippingForbidden )
                         continue;
+//                    qDebug() << nx::format("Ignoring decoded frame with timestamp %1 (%2). Playback does not catch up with decoding.")
+//                                                           .arg((*it)->picture()->m_pts)
+//                                                           .arg(QDateTime::fromMSecsSinceEpoch((*it)->picture()->m_pts / 1000)
+//                                                                .toString(QLatin1String("hh:mm:ss.zzz")));
                     NX_DEBUG(this,
-                        nx::format("Ignoring decoded frame with timestamp %1 (%2). Playback does not catch up with decoding.")
-                            .arg((*it)->picture()->m_pts)
-                            .arg(QDateTime::fromMSecsSinceEpoch((*it)->picture()->m_pts / 1000)
-                                .toString(QLatin1String("hh:mm:ss.zzz"))));
+                             nx::format("Ignoring decoded frame with timestamp %1 (%2). Playback does not catch up with decoding.")
+                             .arg((*it)->picture()->m_pts)
+                             .arg(QDateTime::fromMSecsSinceEpoch((*it)->picture()->m_pts / 1000)
+                                  .toString(QLatin1String("hh:mm:ss.zzz"))));
+
                     emptyPictureBuf = (*it)->picture();
                     delete (*it);
                     m_framesWaitingUploadInGUIThread.erase( it );
@@ -861,6 +875,7 @@ void DecodedPictureToOpenGLUploader::uploadDecodedPicture(
 
             if( emptyPictureBuf == nullptr )
             {
+                qDebug() << "Waiting for a picture gl buffer to get free";
                 NX_DEBUG(this, "Waiting for a picture gl buffer to get free");
                 //waiting for a picture buffer to get free
                 m_cond.wait( lk.mutex() );
@@ -880,10 +895,8 @@ void DecodedPictureToOpenGLUploader::uploadDecodedPicture(
     emptyPictureBuf->m_displayedRect = displayedRect;
     emptyPictureBuf->m_onScreenSize = onScreenSize;
 
-
     //have go through upload thread, since opengl uploading does not scale good on Intel HD Graphics and
-        //it does not matter on PCIe graphics card due to high video memory bandwidth
-
+    //it does not matter on PCIe graphics card due to high video memory bandwidth
     m_framesWaitingUploadInGUIThread.push_back( new AVPacketUploader( emptyPictureBuf, decodedPicture, this ) );
 }
 
@@ -893,7 +906,6 @@ DecodedPictureToOpenGLUploader::UploadedPicture* DecodedPictureToOpenGLUploader:
 
     if( m_terminated )
         return nullptr;
-
     if( !m_framesWaitingUploadInGUIThread.empty() )
     {
         //uploading
@@ -914,8 +926,8 @@ DecodedPictureToOpenGLUploader::UploadedPicture* DecodedPictureToOpenGLUploader:
         pic = m_picturesWaitingRendering.front();
         m_picturesWaitingRendering.pop_front();
         NX_VERBOSE(this,
-            nx::format("Taking uploaded picture (pts %1, seq %2) for first-time rendering.")
-                .arg(pic->pts()).arg(pic->m_sequence));
+                   nx::format("Taking uploaded picture (pts %1, seq %2) for first-time rendering.")
+                   .arg(pic->pts()).arg(pic->m_sequence));
     }
     else if( !m_renderedPictures.empty() )
     {
@@ -990,9 +1002,9 @@ void DecodedPictureToOpenGLUploader::ensureQueueLessThen(int maxSize)
 
     //marking, that skipping frames currently in queue is forbidden and exiting...
     for( std::deque<UploadedPicture*>::iterator
-        it = m_picturesWaitingRendering.begin();
-        it != m_picturesWaitingRendering.end();
-        ++it )
+         it = m_picturesWaitingRendering.begin();
+         it != m_picturesWaitingRendering.end();
+         ++it )
     {
         (*it)->m_skippingForbidden = true;
     }
@@ -1005,8 +1017,8 @@ void DecodedPictureToOpenGLUploader::discardAllFramesPostedToDisplay()
     cancelUploadingInGUIThread();
 
     for( std::deque<UploadedPicture*>::iterator
-        it = m_picturesWaitingRendering.begin();
-        it != m_picturesWaitingRendering.end() && !m_picturesWaitingRendering.empty();
+         it = m_picturesWaitingRendering.begin();
+         it != m_picturesWaitingRendering.end() && !m_picturesWaitingRendering.empty();
          )
     {
         m_emptyBuffers.push_back( *it );
@@ -1024,9 +1036,9 @@ void DecodedPictureToOpenGLUploader::cancelUploadingInGUIThread()
     while( !m_framesWaitingUploadInGUIThread.empty() )
     {
         for( std::deque<AVPacketUploader*>::iterator
-            it = m_framesWaitingUploadInGUIThread.begin();
-            it != m_framesWaitingUploadInGUIThread.end();
-            )
+             it = m_framesWaitingUploadInGUIThread.begin();
+             it != m_framesWaitingUploadInGUIThread.end();
+             )
         {
             if( (*it)->isRunning() )
             {
@@ -1130,16 +1142,16 @@ static int glRGBFormat(AVPixelFormat format )
     {
         switch( format )
         {
-            case AV_PIX_FMT_RGBA:
-                return GL_RGBA;
-            case AV_PIX_FMT_BGRA:
-                return GL_BGRA_EXT;
-            case AV_PIX_FMT_RGB24:
-                return GL_RGB;
-            case AV_PIX_FMT_BGR24:
-                return GL_BGRA_EXT; // TODO: #asinaisky
-            default:
-                break;
+        case AV_PIX_FMT_RGBA:
+            return GL_RGBA;
+        case AV_PIX_FMT_BGRA:
+            return GL_BGRA_EXT;
+        case AV_PIX_FMT_RGB24:
+            return GL_RGB;
+        case AV_PIX_FMT_BGR24:
+            return GL_BGRA_EXT; // TODO: #asinaisky
+        default:
+            break;
         }
     }
     return GL_RGBA;
@@ -1173,8 +1185,8 @@ nx::vms::api::ImageCorrectionData DecodedPictureToOpenGLUploader::getImageCorrec
 }
 
 bool DecodedPictureToOpenGLUploader::renderVideoMemory(
-    DecodedPictureToOpenGLUploader::UploadedPicture* const emptyPictureBuf,
-    const CLConstVideoDecoderOutputPtr& frame)
+        DecodedPictureToOpenGLUploader::UploadedPicture* const emptyPictureBuf,
+        const CLConstVideoDecoderOutputPtr& frame)
 {
 #ifdef __QSV_SUPPORTED__
     emptyPictureBuf->texturePack()->setPictureFormat((AVPixelFormat)frame->format);
@@ -1191,7 +1203,7 @@ bool DecodedPictureToOpenGLUploader::renderVideoMemory(
     displaySize = alignSize(displaySize, 8, 8);
 
     bool isNewTexture = texture->ensureInitialized(
-        displaySize.width(), displaySize.height(), displaySize.width(), 1, GL_RGBA, 1, -1);
+                displaySize.width(), displaySize.height(), displaySize.width(), 1, GL_RGBA, 1, -1);
 
     if (frame->getVideoSurface()->type() == SurfaceType::Nvidia)
     {
@@ -1206,13 +1218,13 @@ bool DecodedPictureToOpenGLUploader::renderVideoMemory(
         float cropWidth = 1;
         float cropHeight = 1;
         if (!renderToRgb(
-            frame->getVideoSurface(),
-            isNewTexture,
-            texture->m_id,
-            m_initializedContext,
-            frame->scaleFactor,
-            &cropWidth,
-            &cropHeight))
+                    frame->getVideoSurface(),
+                    isNewTexture,
+                    texture->m_id,
+                    m_initializedContext,
+                    frame->scaleFactor,
+                    &cropWidth,
+                    &cropHeight))
         {
             NX_ERROR(this, "Failed to render video memory to OpenGL texture");
             return false;
@@ -1227,16 +1239,16 @@ bool DecodedPictureToOpenGLUploader::renderVideoMemory(
 }
 
 uchar* DecodedPictureToOpenGLUploader::convertYuvToRgb(
-    const AVPixelFormat format,
-    const unsigned int width,
-    const unsigned int height,
-    const uint8_t* const planes[],
-    const int lineSizes[])
+        const AVPixelFormat format,
+        const unsigned int width,
+        const unsigned int height,
+        const uint8_t* const planes[],
+        const int lineSizes[])
 {
     if (!useSSE2())
     {
         NX_WARNING(this,
-            "CPU does not contain SSE2 module. Color space convert is not implemented.");
+                   "CPU does not contain SSE2 module. Color space convert is not implemented.");
         return nullptr;
     }
 
@@ -1250,38 +1262,38 @@ uchar* DecodedPictureToOpenGLUploader::convertYuvToRgb(
 
     switch (format)
     {
-        case AV_PIX_FMT_YUV420P:
-            yuv420_argb32_simd_intr(m_yuv2rgbBuffer, planes[0], planes[2], planes[1],
+    case AV_PIX_FMT_YUV420P:
+        yuv420_argb32_simd_intr(m_yuv2rgbBuffer, planes[0], planes[2], planes[1],
                 qPower2Ceil(width, ROUND_COEFF),
                 height,
                 4 * lineSizes[0],
                 lineSizes[0], lineSizes[1], opacity()*255);
-            return m_yuv2rgbBuffer;
+        return m_yuv2rgbBuffer;
 
-        case AV_PIX_FMT_YUV422P:
-            yuv422_argb32_simd_intr(m_yuv2rgbBuffer, planes[0], planes[2], planes[1],
+    case AV_PIX_FMT_YUV422P:
+        yuv422_argb32_simd_intr(m_yuv2rgbBuffer, planes[0], planes[2], planes[1],
                 qPower2Ceil(width, ROUND_COEFF),
                 height,
                 4 * lineSizes[0],
                 lineSizes[0], lineSizes[1], opacity()*255);
-            return m_yuv2rgbBuffer;
+        return m_yuv2rgbBuffer;
 
-        case AV_PIX_FMT_YUV444P:
-            yuv444_argb32_simd_intr(m_yuv2rgbBuffer, planes[0], planes[2], planes[1],
+    case AV_PIX_FMT_YUV444P:
+        yuv444_argb32_simd_intr(m_yuv2rgbBuffer, planes[0], planes[2], planes[1],
                 qPower2Ceil(width, ROUND_COEFF),
                 height,
                 4 * lineSizes[0],
                 lineSizes[0], lineSizes[1], opacity()*255);
-            return m_yuv2rgbBuffer;
+        return m_yuv2rgbBuffer;
 
-        default:
-            NX_WARNING(this,"Color space convert is not implemented for format: %1.", format);
-            return nullptr;
+    default:
+        NX_WARNING(this,"Color space convert is not implemented for format: %1.", format);
+        return nullptr;
     }
 }
 bool DecodedPictureToOpenGLUploader::uploadDataToGl(
-    DecodedPictureToOpenGLUploader::UploadedPicture* const emptyPictureBuf,
-    const CLConstVideoDecoderOutputPtr& frame)
+        DecodedPictureToOpenGLUploader::UploadedPicture* const emptyPictureBuf,
+        const CLConstVideoDecoderOutputPtr& frame)
 {
     if (!m_initializedContext) // TODO: #vkutin #ynikitenkov Why here?
     {
@@ -1315,59 +1327,59 @@ bool DecodedPictureToOpenGLUploader::uploadDataToGl(
 
     switch( format )
     {
-        case AV_PIX_FMT_YUV444P:
-            r_w[1] = r_w[2] = r_w[0];
+    case AV_PIX_FMT_YUV444P:
+        r_w[1] = r_w[2] = r_w[0];
         // fall through
-        case AV_PIX_FMT_YUV422P:
-            h[1] = h[2] = height;
-            break;
-        default:
-            break;
+    case AV_PIX_FMT_YUV422P:
+        h[1] = h[2] = height;
+        break;
+    default:
+        break;
     }
 
     emptyPictureBuf->texturePack()->setPictureFormat( format );
 
     const auto [singleComponent, doubleComponent] =
-        nx::vms::client::core::graphics::ShaderHelper::getTexImageFormats();
+            nx::vms::client::core::graphics::ShaderHelper::getTexImageFormats();
 
-    if( (format == AV_PIX_FMT_YUV420P || format == AV_PIX_FMT_YUV422P || format == AV_PIX_FMT_YUV444P || format == AV_PIX_FMT_YUVA420P) && usingShaderYuvToRgb() )
+            if( (format == AV_PIX_FMT_YUV420P || format == AV_PIX_FMT_YUV422P || format == AV_PIX_FMT_YUV444P || format == AV_PIX_FMT_YUVA420P) && usingShaderYuvToRgb() )
     {
         //using pixel shader for yuv->rgb conversion
         for( int i = 0; i < planeCount; ++i )
         {
             QnGlRendererTexture* texture = emptyPictureBuf->texture(i);
             texture->ensureInitialized(
-                r_w[i], h[i], lineSizes[i],
-                1, singleComponent, 1, i == Y_PLANE_INDEX ? 0x10 : (i == A_PLANE_INDEX ? 0x00 : 0x80) );
+                        r_w[i], h[i], lineSizes[i],
+                        1, singleComponent, 1, i == Y_PLANE_INDEX ? 0x10 : (i == A_PLANE_INDEX ? 0x00 : 0x80) );
 
             NX_VERBOSE(this,
-                nx::format("Uploading to gl texture. id = %1, i = %2, lineSizes[i] = %3, r_w[i] = %4, "
-                    "qPower2Ceil(r_w[i],ROUND_COEFF) = %5, h[i] = %6, planes[i] = %7")
-                    .arg(texture->id())
-                    .arg(i)
-                    .arg(lineSizes[i])
-                    .arg(r_w[i])
-                    .arg(qPower2Ceil(r_w[i],ROUND_COEFF))
-                    .arg(h[i])
-                    .arg(reinterpret_cast<size_t>(planes[i])));
+                       nx::format("Uploading to gl texture. id = %1, i = %2, lineSizes[i] = %3, r_w[i] = %4, "
+                                  "qPower2Ceil(r_w[i],ROUND_COEFF) = %5, h[i] = %6, planes[i] = %7")
+                       .arg(texture->id())
+                       .arg(i)
+                       .arg(lineSizes[i])
+                       .arg(r_w[i])
+                       .arg(qPower2Ceil(r_w[i],ROUND_COEFF))
+                       .arg(h[i])
+                       .arg(reinterpret_cast<size_t>(planes[i])));
             d->glBindTexture( GL_TEXTURE_2D, texture->id() );
             glCheckError("glBindTexture");
 
             const quint64 lineSizes_i = lineSizes[i];
             const quint64 r_w_i = r_w[i];
-//            d->glPixelStorei(GL_UNPACK_ROW_LENGTH, lineSizes_i);
-//            glCheckError("glPixelStorei");
+            //            d->glPixelStorei(GL_UNPACK_ROW_LENGTH, lineSizes_i);
+            //            glCheckError("glPixelStorei");
             NX_ASSERT( lineSizes_i >= qPower2Ceil(r_w_i,ROUND_COEFF) );
 
             loadImageData(
-                d.get(),
-                texture->textureSize().width(),
-                texture->textureSize().height(),
-                lineSizes_i,
-                h[i],
-                1,
-                singleComponent,
-                planes[i]);
+                        d.get(),
+                        texture->textureSize().width(),
+                        texture->textureSize().height(),
+                        lineSizes_i,
+                        h[i],
+                        1,
+                        singleComponent,
+                        planes[i]);
 
             bitrateCalculator.bytesProcessed( qPower2Ceil(r_w[i],ROUND_COEFF)*h[i] );
         }
@@ -1388,16 +1400,16 @@ bool DecodedPictureToOpenGLUploader::uploadDataToGl(
 
             d->glBindTexture( GL_TEXTURE_2D, texture->id() );
             const uchar* pixels = planes[i];
-//            d->glPixelStorei( GL_UNPACK_ROW_LENGTH, i == 0 ? lineSizes[0] : (lineSizes[1]/2) );
+            //            d->glPixelStorei( GL_UNPACK_ROW_LENGTH, i == 0 ? lineSizes[0] : (lineSizes[1]/2) );
 
             loadImageData(d.get(),
-                            texture->textureSize().width(),
-                            texture->textureSize().height(),
-                            i == 0 ? lineSizes[0] : (lineSizes[1]/2),
-                            i == 0 ? height : height / 2,
-                            i == 0 ? 1 : 2,
-                            i == 0 ? singleComponent : doubleComponent,
-                            pixels);
+                          texture->textureSize().width(),
+                          texture->textureSize().height(),
+                          i == 0 ? lineSizes[0] : (lineSizes[1]/2),
+                    i == 0 ? height : height / 2,
+                    i == 0 ? 1 : 2,
+                    i == 0 ? singleComponent : doubleComponent,
+                    pixels);
             /*
             d->glTexSubImage2D(GL_TEXTURE_2D, 0,
                             0, 0,
@@ -1444,7 +1456,7 @@ bool DecodedPictureToOpenGLUploader::uploadDataToGl(
         if (!pixels)
             return false;
 
-//        d->glPixelStorei(GL_UNPACK_ROW_LENGTH, lineInPixelsSize);
+        //        d->glPixelStorei(GL_UNPACK_ROW_LENGTH, lineInPixelsSize);
         glCheckError("glPixelStorei");
 
         int w = qPower2Ceil(r_w[0],ROUND_COEFF);
@@ -1455,7 +1467,7 @@ bool DecodedPictureToOpenGLUploader::uploadDataToGl(
         bitrateCalculator.bytesProcessed( w*h[0]*4 );
         glCheckError("glTexSubImage2D");
 
-//        d->glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+        //        d->glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
         glCheckError("glPixelStorei");
 
         d->glBindTexture( GL_TEXTURE_2D, 0 );

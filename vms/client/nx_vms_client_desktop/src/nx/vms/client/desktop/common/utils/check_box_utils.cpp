@@ -18,12 +18,15 @@ void autoClearTristate(QCheckBox* checkbox)
                 checkbox->setCheckState(Qt::Checked);
         };
 
-    QObject::connect(checkbox,  &QCheckBox::clicked, checkbox,
+    QObject::connect(checkbox, &QCheckBox::clicked, checkbox,
         clearTristate, Qt::DirectConnection);
 }
 
 void setupTristateCheckbox(QCheckBox* checkbox, bool sameValue, bool checked)
 {
+    qDebug() << nx::format("THIENNC - setupTristateCheckbox -- sameValue:{%1} + checked:{%2} ")
+                    .arg(sameValue)
+                    .arg(checked);
     checkbox->setTristate(!sameValue);
     if (!sameValue)
         checkbox->setCheckState(Qt::PartiallyChecked);

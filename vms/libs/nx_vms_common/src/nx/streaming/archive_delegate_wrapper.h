@@ -3,7 +3,13 @@
 #pragma once
 
 #include <nx/streaming/abstract_archive_delegate.h>
-
+extern "C"
+{
+    #include "libavcodec/avcodec.h"
+    #include "libavformat/avformat.h"
+    #include "libavutil/pixfmt.h"
+    #include "libswscale/swscale.h"
+}
 namespace nx {
 namespace vms::server {
 namespace plugins {
@@ -23,6 +29,7 @@ public:
     virtual qint64 startTime() const override;
     virtual qint64 endTime() const override;
     virtual QnAbstractMediaDataPtr getNextData() override;
+//    virtual AVPacket* getNextDataOryza() override;
     virtual qint64 seek(qint64 time, bool findIframe) override;
     virtual QnConstResourceVideoLayoutPtr getVideoLayout() override;
     virtual AudioLayoutConstPtr getAudioLayout() override;
@@ -53,7 +60,6 @@ public:
     virtual void setErrorHandler(std::function<void(const QString& errorString)> handler) override;
 
     QnAbstractArchiveDelegate* delegate() const;
-
 private:
     ArchiveDelegatePtr m_delegate;
 };

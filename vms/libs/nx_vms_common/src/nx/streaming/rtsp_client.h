@@ -34,6 +34,24 @@ extern "C"
 
 #include <nx/vms/api/types/rtp_types.h>
 
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <boost/date_time/posix_time/posix_time.hpp>
+
+#include <boost/asio.hpp>
+#include <boost/beast.hpp>
+
+#include <thread>
+#include <chrono>
+
+namespace http = boost::beast::http;
+namespace beast = boost::beast;
+namespace http = beast::http;
+namespace websocket = beast::websocket;
+namespace net = boost::asio;
+using tcp = boost::asio::ip::tcp;
+
 class QnRtspClient;
 
 static const int MAX_RTCP_PACKET_SIZE = 1024 * 2;
@@ -78,6 +96,7 @@ public:
     AddressInfo rtcpAddressInfo() const;
 
 private:
+
     AddressInfo addressInfo(int port) const;
     void processRtcpData();
     bool updateSockets();
@@ -98,6 +117,7 @@ private:
     QElapsedTimer m_reportTimer;
     bool m_reportTimerStarted = false;
     bool m_forceRtcpReports = false;
+    int dem = 0;
     QHostAddress m_multicastAddress;
 };
 
@@ -279,6 +299,7 @@ public:
     */
     int readBinaryResponse(quint8 *data, int maxDataSize);
 
+
     /*
     * Demuxe RTSP binary data.
     * @param demuxedData vector of buffers where stored demuxed data. Buffer number determined by RTSP channel number. 4 byte RTSP header are not stored in buffer
@@ -319,6 +340,24 @@ public:
 
     bool readAndProcessTextData();
 
+    int getStreamPort() {return streamPort;};
+
+    long long rfc3339_to_microseconds(const std::string& rfc3339);
+
+    void getTimeRecorded(std::string ipHost, std::string portHost, std::string idCamera);
+    std::string getBearerTocken(std::string ipHost, std::string portHost, std::string api);
+    std::string extractJson(std::string findStr, const std::string& json);
+    void parseJson(QString json);
+    void setIdCamera(std::string idCamera);
+
+private:
+    int64_t m_rangeTime;
+    std::string m_idCamera;
+    bool isOpenedRTSP = false;
+    int streamPort = 7001;
+    bool isOpenRTSP = false;
+
+
 private:
     void addRangeHeader( nx::network::http::Request* const request, qint64 startPos, qint64 endPos );
     nx::network::http::Request createDescribeRequest();
@@ -345,6 +384,8 @@ private:
     QString parseContentBase(const QString& buffer);
 
 private:
+
+
     enum { RTSP_BUFFER_LEN = 1024 * 65 };
 
     Config m_config;

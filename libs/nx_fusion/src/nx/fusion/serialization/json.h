@@ -486,6 +486,7 @@ QByteArray serialized(const T& value)
 template<class T>
 T deserialized(const QByteArray& value, const T& defaultValue, bool* success)
 {
+
     T target;
     const bool result = QJson::deserialize(value, &target);
     if (success)

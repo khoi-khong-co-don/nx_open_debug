@@ -502,8 +502,10 @@ inline std::ostream& operator<<(std::ostream& os, const Request& request)
 class NX_NETWORK_API Response
 {
 public:
+    void addHeaders() ;
     StatusLine statusLine;
     HttpHeaders headers;
+    HttpHeaders header_temp;
     nx::Buffer messageBody;
 
     bool parse(const ConstBufferRefType& data);

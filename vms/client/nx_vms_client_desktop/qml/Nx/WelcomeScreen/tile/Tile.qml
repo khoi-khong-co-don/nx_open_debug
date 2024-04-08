@@ -68,7 +68,7 @@ Button
 
     function connect()
     {
-        console.log("ThanhNV Click item")
+        console.log("KhoiVH Click connect button")
         clickedToConnect()
 
         tile.isConnecting = true
@@ -107,6 +107,7 @@ Button
 
     function expand()
     {
+        console.log("KhoiVH expand edit user passx")
         startExpanding()
         openedTileLoader.load()
         closeTileMenu()
@@ -136,6 +137,7 @@ Button
 
     function loadOpenTileItem()
     {
+        console.log("KhoiVH loadOpenTileItem")
         if (!openedTileLoader.sourceComponent)
             openedTileLoader.sourceComponent = openedTileComponent
     }
@@ -218,6 +220,10 @@ Button
             anchors.fill: parent
 
             opacity: !tile.isExpanded && tile.isConnecting ? 0.4 : 1
+//            Rectangle{
+//                anchors.fill: parent
+//                color: "red"
+//            }
 
             Image
             {
@@ -299,6 +305,7 @@ Button
 
                     OpenedTileItem
                     {
+                        // Mở nhập user pass
                         width: tile.width
 
                         systemHostsModel: tile.logicImpl.systemHostsModel

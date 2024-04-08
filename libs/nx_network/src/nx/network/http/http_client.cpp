@@ -47,7 +47,7 @@ void HttpClient::pleaseStop()
 bool HttpClient::doGet(const nx::utils::Url& url)
 {
     using namespace std::placeholders;
-    qDebug() << nx::format("HTTP: %1").args(url);
+    qDebug() << nx::format("HTTP HttpClient: %1").args(url);
     return doRequest(std::bind(
         static_cast<void(AsyncClient::*)(const nx::utils::Url&)>(
             &nx::network::http::AsyncClient::doGet), _1, url));

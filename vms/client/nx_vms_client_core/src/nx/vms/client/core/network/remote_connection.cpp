@@ -51,26 +51,53 @@ public:
     virtual void startReceivingNotifications() override
     {
         const nx::network::SocketAddress address = queryProcessor()->address();
+        qDebug() << nx::format("port server Oryza %1 (%2)").arg(m_moduleInformation.port);
+        if (m_moduleInformation.port == 7005)           //7005
+        {
+            /////////// KHOI THEM /////////////////////////////////
+            const nx::utils::Url url = nx::network::url::Builder()
+                .setScheme(nx::network::http::kUrlSchemeName)                    //   kSecureUrlSchemeName
+                .setEndpoint(address)
+                .toUrl();
+            m_messageBus->init<nx::p2p::MessageBus>(m_peerType);
+            m_messageBus->setHandler(notificationManager());
 
-        const nx::utils::Url url = nx::network::url::Builder()
-            .setScheme(nx::network::http::kSecureUrlSchemeName)
-            .setEndpoint(address)
-            .toUrl();
+            NX_VERBOSE(this, "Start receiving notifications from %1 (%2)",
+                m_moduleInformation.id,
+                url);
+            qDebug() << nx::format("Start receiving notifications from ORYZA %1 (%2)").args(m_moduleInformation.id,url);
 
-        m_messageBus->init<nx::p2p::MessageBus>(m_peerType);
-        m_messageBus->setHandler(notificationManager());
+            base_type::startReceivingNotifications();
 
-        NX_VERBOSE(this, "Start receiving notifications from %1 (%2)",
-            m_moduleInformation.id,
-            url);
+            m_messageBus->addOutgoingConnectionToPeer(m_moduleInformation.id,
+                nx::vms::api::PeerType::server,
+                url,
+                queryProcessor()->credentials(),
+                queryProcessor()->adapterFunc(m_moduleInformation.id));
+            ////////////////////////////////////////////////
+        }
+        else
+        {
+            const nx::utils::Url url = nx::network::url::Builder()
+                .setScheme(nx::network::http::kSecureUrlSchemeName)                    //   kSecureUrlSchemeName
+                .setEndpoint(address)
+                .toUrl();
+            m_messageBus->init<nx::p2p::MessageBus>(m_peerType);
+            m_messageBus->setHandler(notificationManager());
 
-        base_type::startReceivingNotifications();
+            NX_VERBOSE(this, "Start receiving notifications from %1 (%2)",
+                m_moduleInformation.id,
+                url);
+            qDebug() << nx::format("Start receiving notifications from %1 (%2)").args(m_moduleInformation.id,url);
 
-        m_messageBus->addOutgoingConnectionToPeer(m_moduleInformation.id,
-            nx::vms::api::PeerType::server,
-            url,
-            queryProcessor()->credentials(),
-            queryProcessor()->adapterFunc(m_moduleInformation.id));
+            base_type::startReceivingNotifications();
+
+            m_messageBus->addOutgoingConnectionToPeer(m_moduleInformation.id,
+                nx::vms::api::PeerType::server,
+                url,
+                queryProcessor()->credentials(),
+                queryProcessor()->adapterFunc(m_moduleInformation.id));
+        }
     }
 
     virtual void stopReceivingNotifications() override

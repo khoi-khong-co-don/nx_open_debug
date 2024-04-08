@@ -78,6 +78,7 @@ QnLicenseWidget::QnLicenseWidget(QWidget* parent):
     connect(ui->activateLicenseButton, &QPushButton::clicked, this,
         [this]()
         {
+        qDebug() << "connect(ui->activateLicenseButton";
             ui->activateLicenseButton->showIndicator();
             setState(Waiting);
         });

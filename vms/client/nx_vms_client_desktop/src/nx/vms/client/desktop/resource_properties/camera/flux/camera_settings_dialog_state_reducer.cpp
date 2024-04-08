@@ -608,12 +608,15 @@ bool isValidScheduleTask(const State& state, const QnScheduleTask& task)
 
 State::ScheduleAlerts calculateScheduleAlerts(const State& state)
 {
+    // qDebug() << nx::format("THIENNC DOUBLE CHECKER: %1").arg(state.recording.enabled.valueOr(false));
+
     if (!state.supportsSchedule()
         || !state.recording.schedule.hasValue()
         || !state.recording.enabled.valueOr(false))
     {
         return {};
     }
+
 
     State::ScheduleAlerts scheduledAlerts;
 
@@ -1991,15 +1994,23 @@ std::pair<bool, State> CameraSettingsDialogStateReducer::setRecordingEnabled(
     State state,
     bool value)
 {
-    NX_VERBOSE(NX_SCOPE_TAG, "%1 to %2", __func__, value);
+    value = true; //HERE TO ENABLE BUTTON
 
+    NX_VERBOSE(NX_SCOPE_TAG, "%1 to %2", __func__, value);
+    qDebug() << "CameraSettingsDialogStateReducer::setRecordingEnabled";
     if (state.recording.enabled.equals(value))
         return {false, std::move(state)};
 
     state.hasChanges = true;
     state.recording.enabled.setUser(value);
+
+    qDebug() << nx::format("THIENNC DOUBLE CHECK: %1").arg(value);
+
+    //Kiểm tra xem có giá trị hay không không có thì đặt mặc định là false(tắt record)
     if (!state.recording.enabled.getBase().has_value())
-        state.recording.enabled.setBase(false);
+        // state.recording.enabled.setBase(false);
+        state.recording.enabled.setBase(true);
+
 
     const bool emptyScheduleHintDisplayed = state.recordingHint.has_value()
         && *state.recordingHint == State::RecordingHint::emptySchedule;

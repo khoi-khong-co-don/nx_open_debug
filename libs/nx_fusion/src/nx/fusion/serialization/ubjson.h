@@ -44,9 +44,13 @@ namespace QnUbjson {
         if (bool has = false; QnSerialization::deserialize(stream, &has))
         {
             if (!has)
+            {
+                qDebug() << nx::format("Data Ubjson has:    %1").arg(has);
                 return true;
+            }
             if (T data; QnSerialization::deserialize(stream, &data))
             {
+                qDebug() << nx::format("Data Ubjson:    %1").arg(data);
                 *target = std::move(data);
                 return true;
             }
@@ -88,6 +92,8 @@ namespace QnUbjson {
     template<typename T>
     auto deserialized(const nx::ConstBufferRefType& value, T&& defaultValue = {}, bool* success = nullptr)
     {
+        QByteArray byteArray = QByteArray::fromRawData(value.data(), (int) value.size());
+        qDebug() << "Byte Array : " << byteArray;
         return deserialized(
             QByteArray::fromRawData(value.data(), (int) value.size()),
             std::forward<T>(defaultValue),

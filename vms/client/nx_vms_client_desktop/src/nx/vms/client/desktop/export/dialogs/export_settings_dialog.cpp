@@ -440,6 +440,7 @@ bool ExportSettingsDialog::tryClose(bool /*force*/)
 
 void ExportSettingsDialog::forcedUpdate()
 {
+    qDebug() << "ExportSettingsDialog::forcedUpdate";
     renderState();
 }
 

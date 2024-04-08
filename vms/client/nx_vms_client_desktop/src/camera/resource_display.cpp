@@ -25,6 +25,7 @@ QnResourceDisplay::QnResourceDisplay(const QnResourcePtr &resource, QObject *par
     QnResourceConsumer(resource),
     m_started(false)
 {
+    qDebug() << "QnResourceDisplay::QnResourceDisplay";
     NX_ASSERT(resource);
 
     m_mediaResource = resource.dynamicCast<QnMediaResource>();
@@ -32,6 +33,7 @@ QnResourceDisplay::QnResourceDisplay(const QnResourcePtr &resource, QObject *par
     m_dataProvider = qnClientCoreModule->dataProviderFactory()->createDataProvider(resource);
     if (m_dataProvider)
     {
+        qDebug() << "QnResourceDisplay tao QnAbstractArchiveStreamReader";
         m_archiveReader = dynamic_cast<QnAbstractArchiveStreamReader *>(m_dataProvider.data());
         if (m_archiveReader && resource->flags().testFlag(Qn::local_media))
             m_archiveReader->setCycleMode(true);
@@ -190,6 +192,7 @@ void QnResourceDisplay::start() {
 }
 
 void QnResourceDisplay::play() {
+    qDebug() << "QnResourceDisplay::play resumeMedia";
     if(m_archiveReader == nullptr)
         return;
 

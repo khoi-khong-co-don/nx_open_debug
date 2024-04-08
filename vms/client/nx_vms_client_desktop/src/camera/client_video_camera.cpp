@@ -43,7 +43,7 @@ QnClientVideoCamera::QnClientVideoCamera(const QnMediaResourcePtr &resource, QnA
     if (m_reader)
     {
         m_reader->addDataProcessor(&m_camdispay);
-
+        qDebug() << "QnClientVideoCamera tao QnAbstractArchiveStreamReader";
         if (const auto archiveReader =
             dynamic_cast<QnAbstractArchiveStreamReader*>(m_reader.data()))
         {
@@ -146,7 +146,7 @@ void QnClientVideoCamera::exportMediaPeriodToFile(const QnTimePeriod &timePeriod
     const QnTimePeriodList& playbackMask)
 {
     using namespace nx::recording;
-
+    qDebug() << nx::format("QnClientVideoCamera::exportMediaPeriodToFile file Name: %1").arg(fileName);
     qint64 startTimeUs = timePeriod.startTimeMs * 1000ll;
     NX_ASSERT(timePeriod.durationMs > 0, "Invalid time period, possibly LIVE is exported");
     qint64 endTimeUs = timePeriod.durationMs > 0
@@ -158,6 +158,7 @@ void QnClientVideoCamera::exportMediaPeriodToFile(const QnTimePeriod &timePeriod
     {
         auto tmpReader = qnClientCoreModule->dataProviderFactory()->createDataProvider(
             m_resource->toResourcePtr());
+        qDebug() << "exportMediaPeriodToFile tao QnAbstractArchiveStreamReader";
         QnAbstractArchiveStreamReader* archiveReader = dynamic_cast<QnAbstractArchiveStreamReader*> (tmpReader);
         if (!archiveReader)
         {
@@ -173,7 +174,7 @@ void QnClientVideoCamera::exportMediaPeriodToFile(const QnTimePeriod &timePeriod
         // In the case of AVI, it is required to add filtering.
         if (fileName.toLower().endsWith(".avi"))
             archiveReader->addMediaFilter(std::make_shared<H2645Mp4ToAnnexB>());
-
+        qDebug() << "Tao QnRtspClientArchiveDelegate 1";
         QnRtspClientArchiveDelegate* rtspClient = dynamic_cast<QnRtspClientArchiveDelegate*> (archiveReader->getArchiveDelegate());
         if (rtspClient) {
             // 'slow' open mode. send DESCRIBE and SETUP to server.
@@ -193,6 +194,7 @@ void QnClientVideoCamera::exportMediaPeriodToFile(const QnTimePeriod &timePeriod
         connect(m_exportRecorder,   &QnStreamRecorder::recordingProgress, this,   &QnClientVideoCamera::exportProgress);
         connect(m_exportRecorder,   &QnStreamRecorder::recordingFinished, this,   &QnClientVideoCamera::exportFinished);
     }
+    qDebug() << "exportMediaPeriodToFile tao QnAbstractArchiveStreamReader 2";
     QnAbstractArchiveStreamReader* archiveReader = dynamic_cast<QnAbstractArchiveStreamReader*> (m_exportReader.data());
 
     if (m_motionFileList[0] && archiveReader)
@@ -228,7 +230,10 @@ void QnClientVideoCamera::exportMediaPeriodToFile(const QnTimePeriod &timePeriod
 
     m_exportReader->addDataProcessor(m_exportRecorder);
     if (archiveReader)
+    {
+        qDebug() << "VAO JumpTo 2";
         archiveReader->jumpTo(startTimeUs, startTimeUs);
+    }
 
     m_exportReader->start();
     m_exportRecorder->start();

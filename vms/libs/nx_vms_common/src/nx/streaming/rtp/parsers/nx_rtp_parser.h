@@ -34,6 +34,7 @@ private:
     void logMediaData(const QnAbstractMediaDataPtr& metadata);
 
 private:
+    bool isFirstProcess = true;
     nx::utils::SoftwareVersion m_serverVersion;
     const QnUuid m_deviceId;
     CodecParametersConstPtr m_context;

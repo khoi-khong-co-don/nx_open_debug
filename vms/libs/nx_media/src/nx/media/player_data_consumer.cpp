@@ -96,6 +96,11 @@ int PlayerDataConsumer::getBufferingMask() const
     return 1;
 }
 
+void PlayerDataConsumer::putData(AVPacket* packet, AVCodecContext *pCodecCtx, AVFormatContext *pFormatCtx, QnAbstractStreamDataProvider* dataProvider, qint64 timestamp)
+{
+    base_type::putData(packet, pCodecCtx, pFormatCtx, dataProvider, timestamp);
+}
+
 void PlayerDataConsumer::putData(const QnAbstractDataPacketPtr& data)
 {
     qDebug() << "KHOI PlayerDataConsumer::putData";

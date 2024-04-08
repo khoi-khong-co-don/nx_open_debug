@@ -65,6 +65,7 @@ public:
     virtual nx::utils::Url getApiUrl() const;
 
     nx::network::SocketAddress getPrimaryAddress() const;
+    QString getPrimaryAddressOryza(){return m_url;};
     void setPrimaryAddress(const nx::network::SocketAddress& getPrimaryAddress);
 
     /** Get the list of all available Server addresses. */

@@ -279,7 +279,7 @@ void ClientStateHandler::saveWindowsConfiguration()
 {
     if (!NX_ASSERT(d->sessionId != SessionId()))
         return;
-
+    qDebug() << " ClientStateHandler::saveWindowsConfiguration()";
     // Clear existing data.
     deleteWindowsConfiguration();
 

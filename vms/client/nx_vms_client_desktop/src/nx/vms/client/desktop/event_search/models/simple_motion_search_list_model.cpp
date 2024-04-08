@@ -119,7 +119,7 @@ QVariant SimpleMotionSearchListModel::data(const QModelIndex& index, int role) c
     switch (role)
     {
         case Qt::DisplayRole:
-            return tr("Motion");
+            return tr("KHOI 2 Motion");
 
         case Qt::DecorationRole:
             return QVariant::fromValue(qnSkin->pixmap("tree/camera.svg"));
@@ -202,6 +202,7 @@ void SimpleMotionSearchListModel::clearData()
     const auto updatePeriods =
         [this](Qn::TimePeriodContent type, qint64 startTimeMs)
         {
+        qDebug() << "Emit Ready periodsChanged 3";
             if (type == Qn::MotionContent)
                 updateMotionPeriods(startTimeMs);
         };

@@ -23,6 +23,7 @@ public:
       */
     virtual bool canAcceptData() const override;
     virtual void putData( const QnAbstractDataPacketPtr& data ) override;
+    virtual void putData( AVPacket* data , AVCodecContext *pCodecCtx, AVFormatContext *pFormatCtx, QnAbstractStreamDataProvider* dataProvider, qint64 timestamp) override;
     virtual void clearUnprocessedData() override;
     int queueSize() const;
     int maxQueueSize() const;

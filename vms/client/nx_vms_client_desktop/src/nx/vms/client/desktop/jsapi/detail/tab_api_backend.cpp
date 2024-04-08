@@ -286,7 +286,10 @@ void TabApiBackend::Private::updateItemParams(
                 mediaWidget->setSpeed(params.media->speed.value());
 
             if (params.media->timestampMs.has_value())
+            {
+                qDebug() << "TabApiBackend::Private::updateItemParams setPosition";
                 mediaWidget->setPosition(params.media->timestampMs.value().count());
+            }
 
             if (!isFocusedWidget(mediaWidget))
                 return; //< Do all timeline changes only if item is current one.

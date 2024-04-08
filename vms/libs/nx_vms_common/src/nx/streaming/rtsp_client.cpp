@@ -24,6 +24,9 @@
 #include <nx/network/nettools.h>
 #include <utils/common/synctime.h>
 #include <QFile>
+#include <regex>
+#include <iostream>
+#include <string>
 #define DEFAULT_RTP_PORT 554
 
 static const int TCP_RECEIVE_TIMEOUT_MS = 1000 * 5;
@@ -88,6 +91,7 @@ QnRtspIoDevice::QnRtspIoDevice(
     m_remoteMediaPort(mediaPort),
     m_remoteRtcpPort(rtcpPort)
 {
+    qDebug()<< "QnRtspIoDevice::QnRtspIoDevice";
     if (m_remoteRtcpPort == 0 && m_remoteMediaPort != 0)
         m_remoteRtcpPort = m_remoteMediaPort + 1;
     setTransport(transport);
@@ -147,22 +151,21 @@ void QnRtspIoDevice::sendDummy()
 
 qint64 QnRtspIoDevice::read(char *data, qint64 maxSize)
 {
-    int bytesRead;
-    if (m_transport == nx::vms::api::RtpTransportType::tcp)
-    {
-        bytesRead = m_owner->readBinaryResponse((quint8*) data, maxSize); // demux binary data from TCP socket
-        qDebug() << "data from TCP socket: " << *data;
-    }
-        else
-    {
-        bytesRead = m_udpSockets.mediaSocket->recv(data, maxSize);
-        qDebug() << "data from udp socket";
-    }
+        int bytesRead;
+        if (m_transport == nx::vms::api::RtpTransportType::tcp)
+        {
+            bytesRead = m_owner->readBinaryResponse((quint8*) data, maxSize); // demux binary data from TCP socket
+        }
+            else
+        {
+            bytesRead = m_udpSockets.mediaSocket->recv(data, maxSize);
+            qDebug() << "data from udp socket";
+        }
 
-    m_owner->sendKeepAliveIfNeeded();
-    if (m_transport == nx::vms::api::RtpTransportType::udp)
-        processRtcpData();
-    return bytesRead;
+        m_owner->sendKeepAliveIfNeeded();
+        if (m_transport == nx::vms::api::RtpTransportType::udp)
+            processRtcpData();
+        return bytesRead;
 }
 
 nx::network::AbstractCommunicatingSocket* QnRtspIoDevice::getMediaSocket()
@@ -193,8 +196,12 @@ bool QnRtspIoDevice::updateRemotePorts(quint16 mediaPort, quint16 rtcpPort)
 
 bool QnRtspIoDevice::setTransport(nx::vms::api::RtpTransportType rtpTransport)
 {
+    qDebug() << nx::format("QnRtspIoDevice::setTransport rtpTransport :   %1").arg(rtpTransport);
     if (m_transport == rtpTransport)
+    {
+        qDebug() << "QnRtspIoDevice::setTransport m_transport == rtpTransport";
         return true;
+    }
 
     m_transport = rtpTransport;
     return updateSockets();
@@ -287,8 +294,10 @@ bool QnRtspIoDevice::createMulticastSockets()
 
 bool QnRtspIoDevice::updateSockets()
 {
+    qDebug() << "QnRtspIoDevice::updateSockets";
     if (m_transport == nx::vms::api::RtpTransportType::tcp)
     {
+        qDebug() << "QnRtspIoDevice::updateSockets socket tcp";
         m_udpSockets.mediaSocket.reset();
         m_udpSockets.rtcpSocket.reset();
         if (m_owner->m_tcpSock)
@@ -300,10 +309,13 @@ bool QnRtspIoDevice::updateSockets()
     }
 
     if (m_transport == nx::vms::api::RtpTransportType::multicast)
+    {
+        qDebug() << "QnRtspIoDevice::updateSockets socket multicast";
         return createMulticastSockets();
-
+    }
     if (m_transport == nx::vms::api::RtpTransportType::udp)
     {
+        qDebug() << "QnRtspIoDevice::updateSockets socket udp";
         if (!m_udpSockets.bind())
         {
             NX_WARNING(this, "Failed to bind UDP sockets");
@@ -336,6 +348,7 @@ QnRtspIoDevice::AddressInfo QnRtspIoDevice::addressInfo(int port) const
         : nx::network::HostAddress(m_hostAddress.toString());
 
     info.address.port = port;
+    qDebug() << nx::format("PORT RTCP :     %1    IP : %2").args(info.address.port, info.address.address);
     return info;
 }
 
@@ -357,6 +370,7 @@ QnRtspClient::QnRtspClient(
     m_userAgent(nx::network::http::userAgentString()),
     m_defaultAuthScheme(nx::network::http::header::AuthScheme::basic)
 {
+    qDebug() << "TAO RTSP CLIENT";
     m_responseBuffer = new quint8[RTSP_BUFFER_LEN];
     m_responseBufferLen = 0;
 }
@@ -417,16 +431,190 @@ void QnRtspClient::parseRangeHeader(const QString& rangeStr)
     }
 }
 
+void QnRtspClient::parseJson(QString json)
+{
+
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(json.toUtf8());
+
+
+    QJsonArray periodsArray = jsonDoc.object()["periods"].toArray();
+
+        QJsonObject periodObject = periodsArray[0].toObject();
+
+        std::string startTime = periodObject["startTimeMs"].toString().toStdString();
+
+        m_rangeTime = rfc3339_to_microseconds(startTime);
+}
+
+
+std::string QnRtspClient::extractJson(std::string findStr, const std::string& json) {
+    size_t tokenPos = json.find(findStr);
+    if (tokenPos != std::string::npos) {
+        size_t valueStart = tokenPos + findStr.size(); // Move to the start of the token value
+        size_t valueEnd = json.find_first_of("}", valueStart);
+        if (valueEnd != std::string::npos) {
+            // Extract the token value
+            return json.substr(valueStart+1, valueEnd - valueStart + 1);
+        }
+    }
+    return "";
+}
+
+std::string QnRtspClient::getBearerTocken(std::string ipHost, std::string portHost, std::string api)
+{
+    try
+    {
+        std::string login = R"({"username": "admin","password": "1"})";
+        boost::asio::io_service io_service;
+        tcp::resolver resolver(io_service);
+        tcp::resolver::query query(ipHost, portHost);
+        tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+
+        tcp::socket socket(io_service);
+        boost::asio::connect(socket, endpoint_iterator);
+
+        // Create the HTTP POST request
+        std::string request = "POST " + api +  " HTTP/1.1\r\n"
+                                               "Host: " + ipHost + ":" + portHost +"\r\n"
+                                                                                   "Content-Type: application/json\r\n"
+                                                                                   "Content-Length: " +std::to_string(login.length()) + "\r\n"
+                                                                                                                                        "Connection: close\r\n"
+                                                                                                                                        "\r\n" + login;
+
+        boost::asio::write(socket, boost::asio::buffer(request));
+
+        boost::asio::streambuf response;
+        boost::system::error_code error;
+
+        while (boost::asio::read(socket, response, boost::asio::transfer_at_least(1), error)) {
+        }
+
+        if (error != boost::asio::error::eof) {
+            qDebug() << "Error: " << error.message().c_str();
+        }
+
+        std::string response_string(boost::asio::buffers_begin(response.data()),
+                                    boost::asio::buffers_end(response.data()));
+
+        std::string bearer = extractJson(R"("token":)", response_string);
+        qDebug() << "Bearer token -> " << bearer.c_str();
+        return bearer;
+    }
+    catch (std::exception &e)
+    {
+        qDebug() << "Lôi Call API stream: " << e.what();
+    }
+    return "";
+}
+
+void QnRtspClient::getTimeRecorded(std::string ipHost, std::string portHost, std::string idCamera)
+{
+    std::string bearer = "Bearer " +  getBearerTocken(ipHost, portHost, "/api/v1/login");
+    std::string api = "/ec2/recordedTimePeriods?cameraId=" + idCamera + "&detail=1&endTime=9223372036854775807&filter&format=json&groupBy=serverId&limit=2147483647&periodsType=1&startTime=1712183136000&storageLocation=both";
+    qDebug() << nx::format("Get API stream:  %1").arg(api);
+    try
+    {
+        boost::asio::io_service io_service;
+        tcp::resolver resolver(io_service);
+        tcp::resolver::query query(ipHost, portHost);
+        tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+
+        tcp::socket socket(io_service);
+        boost::asio::connect(socket, endpoint_iterator);
+
+        // Create the HTTP POST request
+        std::string request = "GET " + api +  " HTTP/1.1\r\n"
+                                              "Host: " + ipHost + ":" + portHost +"\r\n"
+                                                                                  "Content-Type: application/json\r\n"
+                                                                                  "Authorization: " + bearer + "\r\n"
+                                                                                                               "Content-Length: " +std::to_string(0) + "\r\n"
+                                                                                                                                                       "Connection: close\r\n"
+                                                                                                                                                       "\r\n";
+
+        boost::asio::write(socket, boost::asio::buffer(request));
+
+        boost::asio::streambuf response;
+        boost::system::error_code error;
+
+        while (boost::asio::read(socket, response, boost::asio::transfer_at_least(1), error)) {
+        }
+
+        if (error != boost::asio::error::eof) {
+            qDebug() << "Error: " << error.message().c_str();
+        }
+
+        std::string response_string(boost::asio::buffers_begin(response.data()),
+                                    boost::asio::buffers_end(response.data()));
+        qDebug() << "Response Server Oryza record Time: " << response_string.c_str();
+        size_t startPos = response_string.find("{");
+        std::string jsonstring = response_string.substr(startPos);
+
+        qDebug() << jsonstring.c_str();
+        parseJson(jsonstring.c_str());
+    }
+    catch (std::exception &e)
+    {
+        qDebug() << "Lôi Call API stream: " << e.what();
+    }
+}
+
+long long QnRtspClient::rfc3339_to_microseconds(const std::string& rfc3339) {
+    std::tm tm = {};
+    std::istringstream ss(rfc3339);
+    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+    if (ss.fail()) {
+        throw std::invalid_argument("Invalid RFC 3339 format");
+    }
+    std::string micros_str = rfc3339.substr(rfc3339.find('.') + 1);
+    micros_str = micros_str.substr(0, micros_str.find('+'));
+
+    int digitsToAdd = 6 - micros_str.length();
+    if (digitsToAdd > 0) {
+        micros_str.append(digitsToAdd, '0');
+    } else if (digitsToAdd < 0) {
+        micros_str = micros_str.substr(0, 6);
+    }
+
+
+    long microseconds = std::stol(micros_str);
+
+    std::chrono::system_clock::time_point tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+
+    std::string timezone_str = rfc3339.substr(rfc3339.find_last_of('+') + 1, 5);
+    int timezone_offset_hours = std::stoi(timezone_str.substr(0, 2));
+    int timezone_offset_minutes = std::stoi(timezone_str.substr(3, 2));
+
+    if (timezone_offset_hours > 0)
+        tp -= std::chrono::hours(timezone_offset_hours);
+    else
+        tp += std::chrono::hours(-timezone_offset_hours);
+    tp -= std::chrono::minutes(timezone_offset_minutes);
+
+    tp += std::chrono::microseconds(microseconds);
+    tp += std::chrono::hours(7);
+    auto duration_since_epoch = tp.time_since_epoch();
+    long long microsecondsResult = std::chrono::duration_cast<std::chrono::microseconds>(duration_since_epoch).count();
+    qDebug() << "Check time rfc3339 -> " << rfc3339.c_str() << "      microseconds -> " << microsecondsResult;
+
+    return microsecondsResult;
+}
+
+void QnRtspClient::setIdCamera(std::string idCamera)
+{
+    idCamera.erase(std::remove_if(idCamera.begin(), idCamera.end(), [](char c) { return c == '{' || c == '}'; }), idCamera.end());
+    m_idCamera = idCamera;
+}
+
 CameraDiagnostics::Result QnRtspClient::open(const nx::utils::Url& url, qint64 startTime)
 {
     /*
      * Our own client uses CSEQ. This value is put to the media packets and player check whether it get old or new value
      * after the seek.
      */
+    qDebug() << "QnRtspClient::open";
     if (!m_additionAttrs.contains(Qn::EC2_INTERNAL_RTP_FORMAT))
         m_csec = 1;
     m_actualTransport = m_transport;
-    qDebug() << nx::format("set RtpTransportType: %1").arg(m_actualTransport);
     if (m_actualTransport == nx::vms::api::RtpTransportType::automatic)
     {
         m_actualTransport = nx::vms::api::RtpTransportType::tcp;
@@ -448,20 +636,17 @@ CameraDiagnostics::Result QnRtspClient::open(const nx::utils::Url& url, qint64 s
     if (urlScheme == nx::network::rtsp::kUrlSchemeName)
     {
         isSslRequired = false;
-        qDebug() << "CO SSL kUrlSchemeName";
     }
         else if (urlScheme == nx::network::rtsp::kSecureUrlSchemeName)
     {
 
         isSslRequired = true;
-        qDebug() << "CO SSL kSecureUrlSchemeName";
     }
     else
         return CameraDiagnostics::UnsupportedProtocolResult(m_url, m_url.scheme());
 
     if (!NX_ASSERT(!m_credentials.authToken.isBearerToken() || isSslRequired, "Url: %1", m_url))
     {
-        qDebug() << "KHOI VAO DAY LAM GI";
         return CameraDiagnostics::RequestFailedResult(m_url.toString(),
             "Bearer token authorization can't be used with insecure url scheme.");
     }
@@ -478,41 +663,50 @@ CameraDiagnostics::Result QnRtspClient::open(const nx::utils::Url& url, qint64 s
     if (m_proxyAddress)
     {
         targetAddress = *m_proxyAddress;
-        qDebug() << "KHOI VAO DAY";
     }
         else
     {
         targetAddress = nx::network::url::getEndpoint(m_url, DEFAULT_RTP_PORT);
-        qDebug() << "KHOI VAO DAY 0";
     }
-        qDebug() << nx::format("GET targetAddress %1").arg(targetAddress);
-    if (!m_tcpSock->connect(targetAddress, std::chrono::milliseconds(TCP_CONNECT_TIMEOUT_MS)))
-    {
-        qDebug() << "not connect";
-        return CameraDiagnostics::CannotOpenCameraMediaPortResult(url, targetAddress.port);
-    }
-    m_tcpSock->setNoDelay(true);
-    m_tcpSock->setRecvTimeout(m_tcpTimeout);
-    m_tcpSock->setSendTimeout(m_tcpTimeout);
-    qDebug() << "CameraDiagnostics::Result QnRtspClient::open TIEP TUC 1";
-    if (m_playNowMode)
-    {
-        m_contentBase = m_url.toString();
-        qDebug() << "NoErrorResult";
-        return CameraDiagnostics::NoErrorResult();
-    }
-    auto result = sendOptions();
-    if (!result)
-    {
-        stop();
-        qDebug() << "RESULT";
-        return result;
-    }
-    result = sendDescribe();
-    if (result)
-        NX_DEBUG(this, "Sucessfully opened RTSP stream %1", m_url);
-    qDebug() << nx::format("Sucessfully opened RTSP stream %1").arg(m_url);
-    return result;
+        qDebug() << nx::format("GET targetAddress %1").arg(targetAddress.port);
+
+        if (targetAddress.port == 7001)
+        {
+            streamPort = 7001;
+            if (!m_tcpSock->connect(targetAddress, std::chrono::milliseconds(TCP_CONNECT_TIMEOUT_MS)))
+            {
+                return CameraDiagnostics::CannotOpenCameraMediaPortResult(url, targetAddress.port);
+            }
+            m_tcpSock->setNoDelay(true);
+            m_tcpSock->setRecvTimeout(m_tcpTimeout);
+            m_tcpSock->setSendTimeout(m_tcpTimeout);
+            qDebug() << "CameraDiagnostics::Result QnRtspClient::open TIEP TUC 1";
+            if (m_playNowMode)
+            {
+                m_contentBase = m_url.toString();
+                qDebug() << "NoErrorResult";
+                return CameraDiagnostics::NoErrorResult();
+            }
+            auto result = sendOptions();
+            if (!result)
+            {
+                stop();
+                return result;
+            }
+            result = sendDescribe();
+            if (result)
+                NX_DEBUG(this, "Sucessfully opened RTSP stream %1", m_url);
+            qDebug() << nx::format("Sucessfully opened RTSP stream %1").arg(m_url);
+            return result;
+        }
+        else
+        {
+            targetAddress.port = 8080;
+            isOpenRTSP = true;
+            streamPort = 8080;
+            return CameraDiagnostics::NoErrorResult();
+        }
+    return CameraDiagnostics::CannotOpenCameraMediaPortResult(url, targetAddress.port);
 }
 
 CameraDiagnostics::Result QnRtspClient::sendDescribe()
@@ -526,6 +720,7 @@ CameraDiagnostics::Result QnRtspClient::sendDescribe()
     }
 
     QString rangeStr = extractRtspParam(QLatin1String(response), QLatin1String("Range:"));
+    qDebug() << "Range: " << rangeStr;
     if (!rangeStr.isEmpty())
         parseRangeHeader(rangeStr);
 
@@ -578,7 +773,30 @@ bool QnRtspClient::play(qint64 positionStart, qint64 positionEnd, double scale)
         m_sdpTracks.clear();
         return false;
     }
+    if (streamPort != 7001)
+    {
+        qDebug() << nx::format("QnRtspClient::open Oryza url -> %1   idcamera: -> %2 ").args(m_url, m_idCamera);
 
+        std::string ip, port;
+        std::regex rtsp_regex("rtsp://(.*):(\\d+)/.*");
+        std::string urlRtsp = m_url.toString().toStdString();
+        size_t colon_pos = urlRtsp.find(':');
+            size_t slash_pos = urlRtsp.find('/', colon_pos + 3);
+
+            if (colon_pos != std::string::npos && slash_pos != std::string::npos) {
+                std::string address_and_port = urlRtsp.substr(colon_pos + 3, slash_pos - colon_pos - 3);
+
+                std::istringstream iss(address_and_port);
+                std::getline(iss, ip, ':');
+                std::getline(iss, port, '/');
+
+            } else {
+                std::cout << "Không tìm thấy địa chỉ IP và cổng trong chuỗi RTSP." << std::endl;
+            }
+        getTimeRecorded(ip,port, m_idCamera);
+        QString rangeStr = "clock=" + QString::number(m_rangeTime) + "-now";
+        parseRangeHeader(rangeStr);
+    }
     if (!sendPlay(positionStart, positionEnd, scale))
     {
         m_sdpTracks.clear();
@@ -605,7 +823,10 @@ void QnRtspClient::shutdown()
 bool QnRtspClient::isOpened() const
 {
     NX_MUTEX_LOCKER lock(&m_socketMutex);
-    return m_tcpSock && m_tcpSock->isConnected();
+    if (streamPort == 7001)
+        return m_tcpSock && m_tcpSock->isConnected();
+    else
+        return isOpenRTSP;
 }
 
 unsigned int QnRtspClient::sessionTimeoutMs()
@@ -885,6 +1106,7 @@ bool QnRtspClient::sendSetup()
                 transportStr += QLatin1String("interleaved=") + QString::number(track.interleaved.first) + QLatin1Char('-') + QString::number(track.interleaved.second);
             }
             request.headers.insert(nx::network::http::HttpHeader("Transport", transportStr));
+            qDebug() << nx::format("TransportStr Header:    %1").arg(transportStr);
         }
 
         if(!m_SessionId.isEmpty())
@@ -921,6 +1143,7 @@ bool QnRtspClient::sendSetup()
 
 bool QnRtspClient::parseSetupResponse(const QString& response, SDPTrackInfo* track, int trackIndex)
 {
+    qDebug() << nx::format("RESPONSE      -------------- :     %1").arg(response);
     QString sessionParam = extractRtspParam(response, QLatin1String("Session:"));
     bool isFirstParam = true;
     for (const auto& parameter: sessionParam.split(';', Qt::SkipEmptyParts))
@@ -1251,34 +1474,41 @@ bool QnRtspClient::readAndProcessTextData()
     return true;
 }
 
+
 int QnRtspClient::readBinaryResponse(quint8* data, int maxDataSize)
 {
     if (!m_tcpSock)
         return 0;
-    qDebug() << "QnRtspClient::readBinaryResponse";
+
     while (m_tcpSock->isConnected())
     {
-        while (m_responseBufferLen < 4) {
+        while (m_responseBufferLen < 4) {                           // nhận 4 bit đầu
             int bytesRead = readSocketWithBuffering(m_responseBuffer+m_responseBufferLen, 4 - m_responseBufferLen, true);
-            qDebug() << "Vào readBinaryResponse 1";
+
             if (bytesRead <= 0)
                 return bytesRead;
             m_responseBufferLen += bytesRead;
         }
-        qDebug() << "Vào readBinaryResponse 2 " << m_responseBufferLen;
+
         if (m_responseBuffer[0] == '$')
         {
-            qDebug() << "Vào readBinaryResponse 2";
             break;
         }
+        ////////// KHOI THEM //////////////
+        break;
+        //////////////////////////////////
         // have text response or part of text response.
         if (!readAndProcessTextData())
         {
-            qDebug() << "Vào readBinaryResponse 3";
             return -1;
         }
     }
-    int dataLen = (m_responseBuffer[2]<<8) + m_responseBuffer[3] + 4;
+
+    ///////////////////// Đã nhận kí tự "$" xong////////////////////////////////
+
+    /////////////////////// giải header//////////////////////////////
+
+    int dataLen = (m_responseBuffer[2]<<8) + m_responseBuffer[3] + 4;                       // Tại sao + 4 ngay đây??????
     if (maxDataSize < dataLen)
         return -2; // not enough buffer
     int copyLen = qMin(dataLen, m_responseBufferLen);
@@ -1286,21 +1516,19 @@ int QnRtspClient::readBinaryResponse(quint8* data, int maxDataSize)
     if (m_responseBufferLen > copyLen)
         memmove(m_responseBuffer, m_responseBuffer + copyLen, m_responseBufferLen - copyLen);
     data += copyLen;
+
     m_responseBufferLen -= copyLen;
     for (int dataRestLen = dataLen - copyLen; dataRestLen > 0;)
     {
-
         int bytesRead = readSocketWithBuffering(data, dataRestLen, true);
         if (bytesRead <= 0)
         {
-            qDebug() << "Vào readBinaryResponse 4";
             return bytesRead;
         }
         dataRestLen -= bytesRead;
         data += bytesRead;
     }
-    qDebug() << "QnRtspClient::readBinaryResponse " << *data;
-    qDebug() << "QnRtspClient::readBinaryResponse " << dataLen;
+
     return dataLen;
 }
 
@@ -1385,13 +1613,15 @@ bool QnRtspClient::readTextResponse(QByteArray& response)
 {
     if (!m_tcpSock)
         return false;
-    qDebug() << "QnRtspClient::readTextResponse";
+
+    qDebug() << "QnRtspClient::readTextResponse 1";
     int ignoreDataSize = 0;
     bool needMoreData = m_responseBufferLen == 0;
     for (int i = 0; i < 1000 && ignoreDataSize < 1024*1024*3 && m_tcpSock->isConnected(); ++i)
     {
         if (needMoreData) {
             int bytesRead = readSocketWithBuffering(m_responseBuffer + m_responseBufferLen, qMin(1024, RTSP_BUFFER_LEN - m_responseBufferLen), true);
+            qDebug() << nx::format("QnRtspClient::readTextResponse    %1").arg(m_responseBuffer);
             if (bytesRead <= 0)
             {
                 if( bytesRead == 0 )
@@ -1420,8 +1650,10 @@ bool QnRtspClient::readTextResponse(QByteArray& response)
             }
 
             int rtpChannelNum = tmpData[1];
+
             if (isRtcp(rtpChannelNum))
             {
+                qDebug() << "QnRtspClient::readTextResponse isRTCP";
                 if (!processTcpRtcpData(tmpData, bytesRead))
                     NX_VERBOSE(this, "Can't parse RTCP report while reading text response");
             }
@@ -1434,6 +1666,7 @@ bool QnRtspClient::readTextResponse(QByteArray& response)
         }
         else
         {
+            qDebug() << " QnRtspClient::readTextResponse text data 1";
             // text data
             int msgLen = QnTCPConnectionProcessor::isFullMessage(QByteArray::fromRawData((const char*)m_responseBuffer, m_responseBufferLen));
             if (msgLen < 0)
@@ -1441,6 +1674,7 @@ bool QnRtspClient::readTextResponse(QByteArray& response)
 
             if (msgLen > 0)
             {
+                qDebug() << " QnRtspClient::readTextResponse text data 2";
                 response = QByteArray((const char*) m_responseBuffer, msgLen);
                 memmove(m_responseBuffer, m_responseBuffer + msgLen, m_responseBufferLen - msgLen);
                 m_responseBufferLen -= msgLen;
@@ -1490,6 +1724,7 @@ void QnRtspClient::updateTransportHeader(QByteArray& response)
             }
         }
     }
+    qDebug() << nx::format("QnRtspClient::updateTransportHeader %1").arg(tmp);
 }
 
 void QnRtspClient::setTransport(nx::vms::api::RtpTransportType transport)
@@ -1686,7 +1921,6 @@ void sleepIfEmptySocket(nx::network::AbstractStreamSocket* socket)
 
 int QnRtspClient::readSocketWithBuffering(quint8* buf, size_t bufSize, bool readSome)
 {
-    qDebug() << "QnRtspClient::readSocketWithBuffering";
     #if defined(Q_OS_LINUX)
         if (m_config.sleepIfEmptySocket)
             sleepIfEmptySocket(m_tcpSock.get());
@@ -1727,15 +1961,17 @@ CameraDiagnostics::Result QnRtspClient::sendRequestAndReceiveResponse(
 
         ////////////// send data to socket ///////////////////////////////////////////
         qDebug() << "QnRtspClient::sendRequestAndReceiveResponse";
-//        if( m_tcpSock->send(requestBuf.data(), requestBuf.size()) <= 0 )
-//        {
-//            NX_DEBUG(this, "Failed to send request: %1", SystemError::getLastOSErrorText());
-//            return CameraDiagnostics::ConnectionClosedUnexpectedlyResult(m_url.host(), port);
-//        }
+        if( m_tcpSock->send(requestBuf.data(), requestBuf.size()) <= 0 )
+        {
+            NX_DEBUG(this, "Failed to send request: %1", SystemError::getLastOSErrorText());
+            qDebug() << nx::format("Failed to send request: %1").arg(SystemError::getLastOSErrorText());
+            return CameraDiagnostics::ConnectionClosedUnexpectedlyResult(m_url.host(), port);
+        }
 
         if( !readTextResponse(responseBuf) )
         {
             NX_DEBUG(this, "Failed to read response");
+            qDebug() << "Failed to read response";
             return CameraDiagnostics::ConnectionClosedUnexpectedlyResult(m_url.host(), port);
         }
 
@@ -1745,7 +1981,7 @@ CameraDiagnostics::Result QnRtspClient::sendRequestAndReceiveResponse(
 
         nx::network::rtsp::RtspResponse response;
 
-        ////////////// call HTTP  ///////////////////////////////////////////
+        ////////////// read response  ///////////////////////////////////////////
         qDebug() << nx::format("QnRtspClient::sendRequestAndReceiveResponse response: %1").arg(response);
 
         if (!response.parse(nx::ConstBufferRefType(responseBuf.data(), responseBuf.size())))

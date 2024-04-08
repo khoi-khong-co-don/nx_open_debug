@@ -153,7 +153,8 @@ private:
 
         using namespace nx::vms::common;
         return requiredLicenses.empty()
-            ? LicenseInfo{usedLicenses.join(html::kLineBreak), /*limitExceeded*/ false}
+            // ? LicenseInfo{usedLicenses.join(html::kLineBreak), /*limitExceeded*/ false}
+            ? LicenseInfo{usedLicenses.join(html::kLineBreak), /*limitExceeded*/ true}
             : LicenseInfo{requiredLicenses.join(html::kLineBreak), /*limitExceeded*/ true};
     }
 

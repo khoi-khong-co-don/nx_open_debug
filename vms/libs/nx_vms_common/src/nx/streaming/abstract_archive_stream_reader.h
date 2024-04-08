@@ -6,9 +6,15 @@
 #include <nx/streaming/abstract_archive_delegate.h>
 #include <nx/streaming/abstract_navigator.h>
 #include <nx/string.h>
-
+#include "./Logger_KhoiVH.h"
 #include <nx/utils/move_only_func.h>
-
+extern "C"
+{
+    #include "libavcodec/avcodec.h"
+    #include "libavformat/avformat.h"
+    #include "libavutil/pixfmt.h"
+    #include "libswscale/swscale.h"
+}
 struct QnTimePeriod;
 class QnTimePeriodList;
 class AbstractArchiveIntegrityWatcher;
@@ -116,12 +122,13 @@ public:
 protected:
 
     virtual QnAbstractMediaDataPtr getNextData() = 0;
+     virtual void getNextDataOryza(AVPacket** packet, AVCodecContext** pCodecCtx, AVFormatContext** pFormatCtx, qint64* time, std::string rtsp, qint64* timeStamp) = 0;
 signals:
     void beforeJump(qint64 mksec);
     void jumpOccured(qint64 mksec, int sequence);
-    void streamAboutToBePaused();
+    void streamAboutToBePaused(int64_t time);
     void streamPaused();
-    void streamAboutToBeResumed();
+    void streamAboutToBeResumed(int64_t time);
     void streamResumed();
     void nextFrameOccured();
     void prevFrameOccured();
@@ -137,6 +144,14 @@ protected:
 private:
     bool m_enabled = true;
     std::vector<std::shared_ptr<AbstractMediaDataFilter>> m_filters;
+
+private:
+    AVFormatContext *pFormatCtx;
+    AVCodecContext *pCodecCtx;
+    AVCodec *pCodec;
+    AVFrame *pFrame, *pFrameRGB;
+    AVPacket *packet = nullptr;
+    uint8_t *out_buffer;
 };
 
 using QnAbstractArchiveStreamReaderPtr = QSharedPointer<QnAbstractArchiveStreamReader>;

@@ -17,6 +17,17 @@ QnByteArray::QnByteArray(
         reallocate(capacity);
 }
 
+QnByteArray::QnByteArray(const QByteArray &byteArray)
+    : m_alignment(1), // Set alignment as needed
+          m_capacity(byteArray.size()),
+          m_size(byteArray.size()),
+          m_padding(0), // Set padding as needed
+          m_ignore(0), // Set ignore as needed
+          m_data(allocateBuffer(byteArray.size())) {
+        // Copy data from QByteArray to QnByteArray
+        std::memcpy(m_data, byteArray.constData(), byteArray.size());
+    }
+
 QnByteArray::~QnByteArray()
 {
     nx::kit::utils::freeAligned(m_data);

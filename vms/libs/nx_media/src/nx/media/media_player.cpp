@@ -372,6 +372,7 @@ void PlayerPrivate::setMediaStatus(Player::MediaStatus status)
 
 void PlayerPrivate::setLiveMode(bool value)
 {
+    qDebug() << "PlayerPrivate::setLiveMode";
     if (liveMode == value)
         return;
 
@@ -465,7 +466,7 @@ void PlayerPrivate::at_gotVideoFrame()
 
     if (!dataConsumer)
         return;
-
+    qDebug() << "PlayerPrivate::at_gotVideoFrame get Video Frame";
     videoFrameToRender = dataConsumer->dequeueVideoFrame();
     if (!videoFrameToRender)
         return;
@@ -812,6 +813,7 @@ bool PlayerPrivate::createArchiveReader()
         const auto camera = resource.dynamicCast<QnVirtualCameraResource>();
         auto connection = q_ptr->commonModule()->ec2Connection();
         NX_ASSERT(camera);
+        qDebug() << "Tao QnRtspClientArchiveDelegate 3";
         auto rtspArchiveDelegate = new QnRtspClientArchiveDelegate(
             archiveReader.get(),
             connection ? connection->credentials() : nx::network::http::Credentials(),
@@ -899,6 +901,7 @@ bool PlayerPrivate::initDataProvider()
     if (!liveMode)
     {
         // Second arg means precise seek.
+        qDebug() << "VAO JumpTo 11";
         archiveReader->jumpTo(msecToUsec(positionMs), msecToUsec(positionMs));
     }
 
@@ -1064,13 +1067,14 @@ void Player::setPosition(qint64 value)
         const qint64 actualJumpPositionMsec = usecToMsec(actualPositionUsec);
         if (actualJumpPositionMsec != value)
         {
+            qDebug() << "setLiveMode 1";
             d->setLiveMode(value == kLivePosition);
             emit positionChanged();
 
             d->positionMs = d->lastSeekTimeMs = value = actualJumpPositionMsec;
         }
     }
-
+    qDebug() << "setLiveMode 2";
     d->setLiveMode(value == kLivePosition);
     d->setMediaStatus(MediaStatus::Loading);
     d->clearCurrentFrame();
@@ -1205,7 +1209,7 @@ void Player::stop()
 void Player::setSource(const QUrl& url)
 {
     Q_D(Player);
-
+    qDebug() << nx::format("d -> url -> %1").arg(url);
     const QUrl& newUrl = *ini().substitutePlayerUrl ? QUrl(ini().substitutePlayerUrl) : url;
 
     if (newUrl == d->url)
@@ -1220,12 +1224,14 @@ void Player::setSource(const QUrl& url)
 
     stop();
     d->url = newUrl;
+
     d->isLocalFile = d->url.scheme() == "file";
 
     if (d->isLocalFile)
     {
         d->resource.reset(new QnAviResource(d->url.toString()));
         d->resource->setStatus(nx::vms::api::ResourceStatus::online);
+        qDebug() << "setLiveMode 2";
         d->setLiveMode(false);
     }
     else

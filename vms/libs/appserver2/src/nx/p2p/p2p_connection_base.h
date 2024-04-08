@@ -41,7 +41,7 @@ class ConnectionBase:
 {
     Q_OBJECT
 public:
-
+    int portServer = 7001;
     static constexpr char kWebsocketUrlPath[] = "/ec2/transactionBus/websocket";
 
     static constexpr char kHttpBaseUrlPath[] = "/ec2/transactionBus/http";
@@ -277,6 +277,7 @@ private:
 
     // For tests.
     static bool s_noPingSupportClientHeader;
+
 };
 
 QString toString(ConnectionBase::State value);

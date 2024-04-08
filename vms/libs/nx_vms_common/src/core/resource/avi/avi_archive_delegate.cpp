@@ -322,6 +322,22 @@ QnAbstractMediaDataPtr QnAviArchiveDelegate::getNextData()
     return data;
 }
 
+void QnAviArchiveDelegate::getNextDataOryza(AVPacket** packet, AVCodecContext** pCodecCtx, AVFormatContext** pFormatCtx, qint64* time, std::string rtsp, qint64 *timeStamp)
+{
+}
+
+bool QnAviArchiveDelegate::isServerOryza()
+{
+    qDebug() << "QnAviArchiveDelegate::isServerOryza";
+    return true;
+}
+
+bool QnAviArchiveDelegate::isOpenedRTSP()
+{
+    qDebug() << "QnAviArchiveDelegate::isOpenedRTSP";
+    return true;
+}
+
 bool QnAviArchiveDelegate::providesMotionPackets() const
 {
     return m_metadata.metadataStreamVersion >= QnAviArchiveMetadata::kMetadataStreamVersion_2;

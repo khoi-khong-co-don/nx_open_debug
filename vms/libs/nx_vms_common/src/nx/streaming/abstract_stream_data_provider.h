@@ -59,6 +59,7 @@ signals:
 
 protected:
     virtual void putData(const QnAbstractDataPacketPtr& data);
+    virtual void putDataOryza(AVPacket* packet, AVCodecContext *pCodecCtx, AVFormatContext *pFormatCtx, QnAbstractStreamDataProvider* dataProvider, qint64 timestamp);
     virtual void beforeDisconnectFromResource() override;
 
 protected:

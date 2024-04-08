@@ -92,11 +92,14 @@ void QnCachingCameraDataLoader::initLoaders() {
                 [this, dataType]
                 (qint64 startTimeMs)
                 {
+                    qDebug() << nx::format("Handling %1 reply for period %2 (%3)").args( dataType,
+                                                                                    startTimeMs,
+                                                                                    nx::utils::timestampToDebugString(startTimeMs));
                     NX_VERBOSE(this, "Handling %1 reply for period %2 (%3)",
                         dataType,
                         startTimeMs,
                         nx::utils::timestampToDebugString(startTimeMs));
-
+                    qDebug() << "Emit periodChanged 1";
                     emit periodsChanged(dataType, startTimeMs);
                 });
 
@@ -125,7 +128,10 @@ void QnCachingCameraDataLoader::setAllowedContent(AllowedContent value)
     m_allowedContent = value;
 
     for (auto contentType: addedContent)
+    {
+        qDebug() << "QnCachingCameraDataLoader::setAllowedContent";
         updateTimePeriods(contentType, /*forced*/ true);
+    }
 }
 
 AllowedContent QnCachingCameraDataLoader::allowedContent() const
@@ -151,7 +157,10 @@ QnMediaResourcePtr QnCachingCameraDataLoader::resource() const
 void QnCachingCameraDataLoader::load(bool forced)
 {
     for (auto content: m_allowedContent)
+    {
+        qDebug() << "QnCachingCameraDataLoader::load";
         updateTimePeriods(content, forced);
+    }
 }
 
 void QnCachingCameraDataLoader::setMotionSelection(const MotionSelection& motionRegions)
@@ -218,9 +227,10 @@ bool QnCachingCameraDataLoader::loadInternal(Qn::TimePeriodContent periodType)
 {
     QnAbstractCameraDataLoaderPtr loader = m_loaders[periodType];
     NX_ASSERT(loader, "Loader must always exists");
-
+    qDebug() << "QnCachingCameraDataLoader::loadInternal";
     if (!loader)
     {
+        qDebug() << "QnCachingCameraDataLoader::loadInternal not loader";
         emit loadingFailed();
         return false;
     }
@@ -229,6 +239,7 @@ bool QnCachingCameraDataLoader::loadInternal(Qn::TimePeriodContent periodType)
     {
         case Qn::RecordingContent:
         {
+            qDebug() << "QnCachingCameraDataLoader::loadInternal load TimeRecorded Record";
             loader->load();
             return true;
         }
@@ -243,7 +254,7 @@ bool QnCachingCameraDataLoader::loadInternal(Qn::TimePeriodContent periodType)
             const auto filter = isMotionSelectionEmpty
                 ? QString() //< Treat empty selection as whole area selection.
                 : QJson::serialized(m_motionSelection);
-
+            qDebug() << "QnCachingCameraDataLoader::loadInternal load TimeRecorded Motion";
             loader->load(filter);
             return true;
         }
@@ -253,6 +264,7 @@ bool QnCachingCameraDataLoader::loadInternal(Qn::TimePeriodContent periodType)
             // Minimum required value to provide continuous display on the timeline.
             const qint64 analyticsDetailLevelMs = 1000;
             const auto filter = QString::fromUtf8(QJson::serialized(m_analyticsFilter));
+            qDebug() << "QnCachingCameraDataLoader::loadInternal load TimeRecorded AnalyticsContent";
             loader->load(filter, analyticsDetailLevelMs);
             return true;
         }
@@ -285,6 +297,7 @@ void QnCachingCameraDataLoader::discardCachedDataType(Qn::TimePeriodContent type
 
     if (isContentAllowed(type))
     {
+        qDebug() << "QnCachingCameraDataLoader::discardCachedDataType";
         updateTimePeriods(type, true);
         emit periodsChanged(type);
     }
@@ -298,6 +311,7 @@ void QnCachingCameraDataLoader::discardCachedData()
 }
 
 void QnCachingCameraDataLoader::updateTimePeriods(Qn::TimePeriodContent periodType, bool forced) {
+    qDebug() << "QnCachingCameraDataLoader::updateTimePeriods";
     // TODO: #sivanov Make sure we are not sending requests while loader is disabled.
     if (forced || m_previousRequestTime[periodType].hasExpired(requestIntervalMs))
     {

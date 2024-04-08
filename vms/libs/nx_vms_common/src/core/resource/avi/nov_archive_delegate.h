@@ -23,6 +23,10 @@ public:
         const QnResourcePtr& resource,
         AbstractArchiveIntegrityWatcher* archiveIntegrityWatcher = nullptr) override;
     virtual void setSpeed(qint64 displayTime, double value) override;
+    virtual void getNextDataOryza(AVPacket** packet, AVCodecContext** pCodecCtx, AVFormatContext** pFormatCtx, qint64* time, std::string rtsp, qint64 *timeStamp) override;
+    virtual bool isServerOryza() override;
+    virtual bool isOpenedRTSP() override;
+    virtual void pauseRtsp() override {};
 private:
     QnTimePeriodList m_chunks;
     qint64 m_skipFramesBeforeTime;

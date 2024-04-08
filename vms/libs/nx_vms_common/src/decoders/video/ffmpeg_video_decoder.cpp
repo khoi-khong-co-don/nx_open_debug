@@ -19,7 +19,6 @@ extern "C" {
 #include <utils/media/utils.h>
 #include <nx/metrics/metrics_storage.h>
 //#include <opencv2/opencv.hpp>
-#include <opencv2/opencv.hpp>
 static const int LIGHT_CPU_MODE_FRAME_PERIOD = 2;
 static const int MAX_DECODE_THREAD = 4;
 
@@ -313,18 +312,15 @@ int QnFfmpegVideoDecoder::decodeVideo(
 bool QnFfmpegVideoDecoder::decode(
     const QnConstCompressedVideoDataPtr& data, CLVideoDecoderOutputPtr* const outFramePtr)
 {
-    qDebug() << "QnFfmpegVideoDecoder::decode 1";
     bool isImage = false;
     if (data)
     {
-        qDebug() << "QnFfmpegVideoDecoder::decode 2";
         isImage = data->flags.testFlag(QnAbstractMediaData::MediaFlags_StillImage)
             || isImageCanBeDecodedViaQt(data->compressionType);
     }
 
     if (data && m_codecId != data->compressionType)
     {
-        qDebug() << "QnFfmpegVideoDecoder::decode 3";
         if (m_codecId != AV_CODEC_ID_NONE && data->context)
         {
             if (!data->flags.testFlag(QnAbstractMediaData::MediaFlags_AVKey))
@@ -345,7 +341,6 @@ bool QnFfmpegVideoDecoder::decode(
 
     if (data)
     {
-        qDebug() << "QnFfmpegVideoDecoder::decode 4";
         m_lastFlags = data->flags;
         m_lastChannelNumber = data->channelNumber;
 
@@ -386,13 +381,11 @@ bool QnFfmpegVideoDecoder::decode(
                     return false;
             }
         }
-        qDebug() << nx::format("compress type %1").arg(AV_CODEC_ID_MJPEG);
         if (m_needRecreate && (data->flags & AV_PKT_FLAG_KEY))
         {
             m_needRecreate = false;
             resetDecoder(data);
         }
-        qDebug() << "QnFfmpegVideoDecoder::decode 6";
         QnFfmpegAvPacket avpkt((unsigned char*) data->data(), (int) data->dataSize());
         avpkt.dts = data->timestamp;
         avpkt.pts = AV_NOPTS_VALUE;

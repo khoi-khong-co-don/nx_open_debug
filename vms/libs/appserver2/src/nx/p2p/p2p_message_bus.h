@@ -164,6 +164,7 @@ protected:
         const TransportHeader& transportHeader,
         nx::Locker<nx::Mutex>* lock);
 private:
+    bool isconnect = false;
     void sendAlivePeersMessage(const P2pConnectionPtr& connection = P2pConnectionPtr());
 
     void doSubscribe(const QMap<vms::api::PersistentIdData, P2pConnectionPtr>& currentSubscription);

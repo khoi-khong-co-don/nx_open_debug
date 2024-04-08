@@ -110,9 +110,9 @@ CameraMotionSettingsWidget::CameraMotionSettingsWidget(
     const auto model = new QStandardItemModel(this);
     ui->motionStreamComboBox->setModel(model);
 
-    ui->motionStreamComboBox->addItem({}, tr("Primary Stream"),
+    ui->motionStreamComboBox->addItem({}, tr("Primary Stream 1"),
         QVariant::fromValue(StreamIndex::primary));
-    ui->motionStreamComboBox->addItem({}, tr("Secondary Stream"),
+    ui->motionStreamComboBox->addItem({}, tr("Secondary Stream 1"),
         QVariant::fromValue(StreamIndex::secondary));
 
     connect(ui->motionStreamComboBox, QnComboboxActivated, store,

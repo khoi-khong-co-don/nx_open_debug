@@ -113,6 +113,53 @@ QnAbstractMediaDataPtr QnSyncPlayArchiveDelegate::getNextData()
     return m_ownerDelegate->getNextData();
 }
 
+void QnSyncPlayArchiveDelegate::getNextDataOryza(AVPacket** packet, AVCodecContext** pCodecCtx, AVFormatContext** pFormatCtx, qint64* time, std::string rtsp, qint64 *timeStamp)
+{
+    m_ownerDelegate->getNextDataOryza(packet, pCodecCtx, pFormatCtx, time, rtsp, timeStamp);
+}
+
+bool QnSyncPlayArchiveDelegate::isServerOryza()
+{
+    return m_ownerDelegate->isServerOryza();
+}
+
+bool QnSyncPlayArchiveDelegate::isOpenedRTSP()
+{
+    return m_ownerDelegate->isOpenedRTSP();
+}
+
+
+void QnSyncPlayArchiveDelegate::pauseRtsp()
+{
+    return m_ownerDelegate->pauseRtsp();
+}
+
+
+void QnSyncPlayArchiveDelegate::startRtsp(std::string rtsp)
+{
+    return m_ownerDelegate->startRtsp(rtsp);
+}
+
+std::string QnSyncPlayArchiveDelegate::getUrlStream(std::string idcam)
+{
+    return m_ownerDelegate->getUrlStream(idcam);
+}
+
+std::string QnSyncPlayArchiveDelegate::getUrlRecord(std::string idcam, std::string timestamp)
+{
+    return m_ownerDelegate->getUrlRecord(idcam, timestamp);
+}
+
+std::string QnSyncPlayArchiveDelegate::getIpServer()
+{
+    return m_ownerDelegate->getIpServer();
+}
+
+bool QnSyncPlayArchiveDelegate::readFrameFail()
+{
+    return m_ownerDelegate->readFrameFail();
+}
+
 void QnSyncPlayArchiveDelegate::beforeSeek(qint64 time)
 {
     m_ownerDelegate->beforeSeek(time);

@@ -100,6 +100,7 @@ void QnResourcePool::addNewResources(const QnResourceList& resources, AddResourc
 
 void QnResourcePool::addResources(const QnResourceList& resources, AddResourceFlags flags)
 {
+    qDebug() << "QnResourcePool::addResources";
     for (const auto& resource: resources)
     {
         // Getting an NX_ASSERT here? Did you forget to use QnSharedResourcePointer?

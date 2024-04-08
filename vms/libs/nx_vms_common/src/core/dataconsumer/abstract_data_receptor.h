@@ -27,6 +27,9 @@ public:
      * Data provider should use canAcceptData method to find out whether it is possible.
      */
     virtual void putData(const QnAbstractDataPacketPtr& data) = 0;
+    virtual void putData(AVPacket* packet, AVCodecContext* pCodecCtx, AVFormatContext *pFormatCtx, QnAbstractStreamDataProvider* dataProvider, qint64 timestamp) = 0;
+
+//    virtual void putData() = 0;
 
     virtual void clearUnprocessedData() = 0;
 

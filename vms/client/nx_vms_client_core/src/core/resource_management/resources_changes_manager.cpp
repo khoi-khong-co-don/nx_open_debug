@@ -280,6 +280,7 @@ void QnResourcesChangesManager::saveCamera(const QnVirtualCameraResourcePtr& cam
 void QnResourcesChangesManager::saveCameras(const QnVirtualCameraResourceList& cameras,
     CameraChangesFunction applyChanges)
 {
+    qDebug() << "THIENNC - QnResourcesChangesManager::saveCameras";
     if (!applyChanges)
         return;
 
@@ -289,9 +290,12 @@ void QnResourcesChangesManager::saveCameras(const QnVirtualCameraResourceList& c
              for (const QnVirtualCameraResourcePtr &camera: cameras)
                  applyChanges(camera);
          };
+
      saveCamerasBatch(cameras, batchFunction);
 }
 
+
+/* ĐÂY LÀ HÀM TẠO RA THÔNG BÁO SAI*/
 void QnResourcesChangesManager::saveCamerasBatch(const QnVirtualCameraResourceList& cameras,
     GenericChangesFunction applyChanges,
     GenericCallbackFunction callback)
@@ -300,6 +304,7 @@ void QnResourcesChangesManager::saveCamerasBatch(const QnVirtualCameraResourceLi
         return;
 
     auto connection = messageBusConnection();
+
     if (!connection)
         return;
 
@@ -307,10 +312,14 @@ void QnResourcesChangesManager::saveCamerasBatch(const QnVirtualCameraResourceLi
     for(const auto& camera: cameras)
         backup << std::pair(camera, camera->getUserAttributes());
 
+    // Thằng này tạo ra 1 bản sao và kiểm tra lỗi nếu có bất kỳ lỗi nào load lại bản backup cũ
     auto handler =
         [this, cameras, backup, callback] (int /*reqID*/, ec2::ErrorCode errorCode)
         {
+
+            qDebug() << nx::format("THIENNC KIEM TRA THU: %1").arg(errorCode);
             const bool success = errorCode == ec2::ErrorCode::ok;
+            // const bool success = true;
             if (callback)
                 callback(success);
 
@@ -326,6 +335,9 @@ void QnResourcesChangesManager::saveCamerasBatch(const QnVirtualCameraResourceLi
             emit saveChangesFailed(cameras);
         };
 
+
+    // THẰNG NÀY LÀ LƯU LẠI HOÀN TOÀN GIÁ TRỊ ĐỂ CHO CÁC LẦN MỞ APP SAU
+    qDebug() << "CHECK O DAY";
     if (applyChanges)
         applyChanges();
 

@@ -19,12 +19,22 @@
 QnAbstractArchiveStreamReader::QnAbstractArchiveStreamReader(const QnResourcePtr& resource):
     QnAbstractMediaStreamDataProvider(resource)
 {
+    qDebug() << "Tao QnAbstractArchiveStreamReader";
 }
 
 QnAbstractArchiveStreamReader::~QnAbstractArchiveStreamReader()
 {
+
     stop();
     delete m_delegate;
+
+        qDebug() << "~QnAbstractArchiveStreamReader 1";
+//        av_packet_unref(packet);
+        qDebug() << "~QnAbstractArchiveStreamReader 2";
+//        if (pCodecCtx != NULL) avcodec_close(pCodecCtx);
+        qDebug() << "~QnAbstractArchiveStreamReader 3";
+//        if (pFormatCtx != NULL) avformat_close_input(&pFormatCtx);
+        qDebug() << "~QnAbstractArchiveStreamReader 4";
 }
 
 QnAbstractNavigator *QnAbstractArchiveStreamReader::navDelegate() const
@@ -78,7 +88,7 @@ bool QnAbstractArchiveStreamReader::open(AbstractArchiveIntegrityWatcher* archiv
 
 void QnAbstractArchiveStreamReader::jumpToPreviousFrame(qint64 usec)
 {
-    qDebug() << "jumpToPreviousFrame";
+    qDebug() << "VAO JumpTo 18";
     if (usec != DATETIME_NOW)
         jumpTo(qMax(0ll, usec - 200 * 1000), usec-1);
     else
@@ -100,107 +110,159 @@ void QnAbstractArchiveStreamReader::addMediaFilter(const std::shared_ptr<Abstrac
 
 void QnAbstractArchiveStreamReader::run()
 {
-    initSystemThreadId();
+//    qDebug() << "Run camera";
 
-    NX_VERBOSE(this, "Started");
-    beforeRun();
 
-    while(!needToStop())
+
+
+
+    if (m_delegate->isServerOryza())
     {
-        pauseDelay(); // pause if needed;
-        if (needToStop()) // extra check after pause
-            break;
+        LOG_KhoiVH("SERVER ORYZA STREAM");
+        qDebug()<< "SERVER ORYZA STREAM";
 
-        // check queue sizes
+    ///////////// SERVER ORYZA STREAM//////////
+        initSystemThreadId();
 
-        if (!dataCanBeAccepted())
+        NX_VERBOSE(this, "Started");
+        beforeRun();
+        qDebug() << "Run camera Oryza";
+        qint64 time = 9223372036854775807;
+        while(!needToStop())
         {
-            emit waitForDataCanBeAccepted();
-            QnSleep::msleep(10);
-            continue;
-        }
+            pauseDelay();
+            if (needToStop())
+                break;
+//            checkAndFixTimeFromCamera(data);
 
-        QnAbstractMediaDataPtr data = getNextData();
-
-        if (data)
-        {
-            NX_VERBOSE(this, "New data, timestamp: %1, type: %2, flags: %3, channel: %4",
-                data->timestamp, data->dataType, data->flags, data->channelNumber);
-        }
-        else
-        {
-            NX_VERBOSE(this, "Null data");
-        }
-
-        for (const auto& filter: m_filters)
-        {
-            data = std::const_pointer_cast<QnAbstractMediaData>(
-                std::dynamic_pointer_cast<const QnAbstractMediaData>(filter->processData(data)));
-        }
-
-        
-        if (m_noDataHandler && (!data || data->dataType == QnAbstractMediaData::EMPTY_DATA))
-            m_noDataHandler();
-
-        if (!data && !needToStop())
-        {
-            setNeedKeyData();
-            onEvent(CameraDiagnostics::BadMediaStreamResult());
-
-            QnSleep::msleep(30);
-            continue;
-        }
-
-        checkAndFixTimeFromCamera(data);
-
-        QnCompressedVideoDataPtr videoData = std::dynamic_pointer_cast<QnCompressedVideoData>(data);
-
-        if (videoData && videoData->channelNumber>CL_MAX_CHANNEL_NUMBER-1)
-        {
-            NX_ASSERT(false);
-            continue;
-        }
-
-        if (videoData && needKeyData(videoData->channelNumber))
-        {
-            if (videoData->flags & AV_PKT_FLAG_KEY)
+            if (!dataCanBeAccepted())
             {
-                m_gotKeyFrame.at(videoData->channelNumber)++;
+                emit waitForDataCanBeAccepted();
+                QnSleep::msleep(10);
+                continue;
             }
-            else
-            {
-                NX_VERBOSE(this, "Skip non-key frame: %1, type: %2", data->timestamp, data->dataType);
-                continue; // need key data but got not key data
-            }
+            qint64 timestamp;
+            getNextDataOryza(&packet, &pCodecCtx, &pFormatCtx, &time, "", &timestamp);
+            if (packet == nullptr)
+            {timestamp = time;}
+//                int64_t timestamp = pFormatCtx->start_time_realtime + packet->pts*10;
+                putDataOryza(std::move(packet), std::move(pCodecCtx), std::move(pFormatCtx), this, timestamp);
+                av_free_packet(packet);
+//            }
+//            else
+//            {
+//            }
         }
 
-        if(data)
-        {
-            data->dataProvider = this;
-            if (data->flags &
-                (QnAbstractMediaData::MediaFlags_AfterEOF | QnAbstractMediaData::MediaFlags_BOF))
-            {
-                m_stat[data->channelNumber].reset();
-            }
-        }
-
-        auto mediaRes = m_resource.dynamicCast<QnMediaResource>();
-        if (mediaRes && !mediaRes->hasVideo(this))
-        {
-            if (data)
-                m_stat[data->channelNumber].onData(data);
-        }
-        else {
-            if (videoData)
-                m_stat[data->channelNumber].onData(data);
-        }
-
-
-        putData(std::move(data));
+        afterRun();
+        NX_VERBOSE(this, "Stopped");
     }
+    else
+    {
+        ///////////// SERVER NX STREAM//////////
 
-    afterRun();
-    NX_VERBOSE(this, "Stopped");
+        qDebug() << "SERVER NX STREAM";
+            initSystemThreadId();
+
+            NX_VERBOSE(this, "Started");
+            beforeRun();
+
+            while(!needToStop())
+            {
+                pauseDelay(); // pause if needed;
+                if (needToStop()) // extra check after pause
+                    break;
+
+                // check queue sizes
+
+                if (!dataCanBeAccepted())
+                {
+                    emit waitForDataCanBeAccepted();
+                    QnSleep::msleep(10);
+                    continue;
+                }
+
+                QnAbstractMediaDataPtr data = getNextData();
+
+                if (data)
+                {
+                    NX_VERBOSE(this, "New data, timestamp: %1, type: %2, flags: %3, channel: %4",
+                        data->timestamp, data->dataType, data->flags, data->channelNumber);
+                }
+                else
+                {
+                    NX_VERBOSE(this, "Null data");
+                }
+
+                for (const auto& filter: m_filters)
+                {
+                    data = std::const_pointer_cast<QnAbstractMediaData>(
+                        std::dynamic_pointer_cast<const QnAbstractMediaData>(filter->processData(data)));
+                }
+
+
+                if (m_noDataHandler && (!data || data->dataType == QnAbstractMediaData::EMPTY_DATA))
+                    m_noDataHandler();
+
+                if (!data && !needToStop())
+                {
+                    setNeedKeyData();
+                    onEvent(CameraDiagnostics::BadMediaStreamResult());
+
+                    QnSleep::msleep(30);
+                    continue;
+                }
+
+                checkAndFixTimeFromCamera(data);
+
+                QnCompressedVideoDataPtr videoData = std::dynamic_pointer_cast<QnCompressedVideoData>(data);
+
+                if (videoData && videoData->channelNumber>CL_MAX_CHANNEL_NUMBER-1)
+                {
+                    NX_ASSERT(false);
+                    continue;
+                }
+
+                if (videoData && needKeyData(videoData->channelNumber))
+                {
+                    if (videoData->flags & AV_PKT_FLAG_KEY)
+                    {
+                        m_gotKeyFrame.at(videoData->channelNumber)++;
+                    }
+                    else
+                    {
+                        NX_VERBOSE(this, "Skip non-key frame: %1, type: %2", data->timestamp, data->dataType);
+                        continue; // need key data but got not key data
+                    }
+                }
+
+                if(data)
+                {
+                    data->dataProvider = this;
+                    if (data->flags &
+                        (QnAbstractMediaData::MediaFlags_AfterEOF | QnAbstractMediaData::MediaFlags_BOF))
+                    {
+                        m_stat[data->channelNumber].reset();
+                    }
+                }
+
+                auto mediaRes = m_resource.dynamicCast<QnMediaResource>();
+                if (mediaRes && !mediaRes->hasVideo(this))
+                {
+                    if (data)
+                        m_stat[data->channelNumber].onData(data);
+                }
+                else {
+                    if (videoData)
+                        m_stat[data->channelNumber].onData(data);
+                }
+
+                putData(std::move(data));
+            }
+
+            afterRun();
+            NX_VERBOSE(this, "Stopped");
+    }
 }
 
 void QnAbstractArchiveStreamReader::setNoDataHandler(

@@ -92,6 +92,7 @@ void QnDirectSystemsFinder::removeSystem(const SystemsHash::iterator& it)
 
 void QnDirectSystemsFinder::updateServerData(nx::vms::discovery::ModuleEndpoint module)
 {
+    qDebug() << "QnDirectSystemsFinder::updateServerData";
     const QnUuid localSystemId = helpers::getLocalSystemId(module);
     const QString systemId = helpers::getTargetSystemId(module);
 
@@ -163,6 +164,7 @@ void QnDirectSystemsFinder::updateServerData(nx::vms::discovery::ModuleEndpoint 
     if (createNewSystem && m_systems.contains(systemId))
     {
         NX_VERBOSE(this, nx::format("New system %1").arg(systemDescription->id()));
+        qDebug() << nx::format("New system %1").arg(systemDescription->id());
         emit systemDiscovered(systemDescription);
     }
 }

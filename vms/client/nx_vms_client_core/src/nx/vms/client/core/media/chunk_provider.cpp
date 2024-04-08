@@ -90,6 +90,7 @@ void ChunkProvider::ChunkProviderInternal::setResourceId(const QnUuid& id)
     connect(m_loader.get(), &QnFlatCameraDataLoader::ready, this,
         [this](qint64 /*startTimeMs*/)
         {
+            qDebug() << "ChunkProvider::ChunkProviderInternal::setResourceId";
             notifyAboutTimePeriodsChange();
             setLoading(false);
         });
@@ -149,7 +150,7 @@ void ChunkProvider::ChunkProviderInternal::updateInternal()
 {
     if (!m_loader)
         return;
-
+    qDebug() << "ChunkProviderInternal::updateInternal load TimeRecorded";
     m_loader->load(m_filter, 1);
 
     const auto camera = getCamera(m_loader->resource()->getId());

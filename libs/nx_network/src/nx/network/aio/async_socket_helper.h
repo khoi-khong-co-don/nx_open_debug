@@ -268,7 +268,6 @@ public:
         // This assert is not critical but is a signal of a possible
         // ineffective memory usage in calling code.
         NX_ASSERT(buf->capacity() > buf->size());
-        qDebug() << nx::format("capacity: %1    size    %2 ").args(buf->capacity(), buf->size());
         if (buf->capacity() == buf->size())
             buf->reserve(kDefaultReserveSize);
         m_recvBuffer = buf;

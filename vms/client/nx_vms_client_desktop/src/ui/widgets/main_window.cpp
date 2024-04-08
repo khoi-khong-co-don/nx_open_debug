@@ -114,10 +114,15 @@ namespace nx::vms::client::desktop {
 
 namespace {
 
-static constexpr int kMinimalWindowWidth = 1024;
-static constexpr int kMinimalWindowHeight = 768;
-static constexpr int kSmallMinimalWindowWidth = 400;
-static constexpr int kSmallMinimalWindowHeight = 300;
+//static constexpr int kMinimalWindowWidth = 1024;
+//static constexpr int kMinimalWindowHeight = 768;
+//static constexpr int kSmallMinimalWindowWidth = 400;
+//static constexpr int kSmallMinimalWindowHeight = 300;
+
+static constexpr int kMinimalWindowWidth = 200;
+static constexpr int kMinimalWindowHeight = 200;
+static constexpr int kSmallMinimalWindowWidth = 200;
+static constexpr int kSmallMinimalWindowHeight = 200;
 
 } // namespace
 
@@ -408,6 +413,13 @@ MainWindow::MainWindow(QnWorkbenchContext *context, QWidget *parent, Qt::WindowF
     connect(action(action::FullscreenMaximizeHotkeyAction), &QAction::triggered,
         action(action::EffectiveMaximizeAction), &QAction::trigger);
 
+//    connect(action(action::FullscreenMaximizeHotkeyAction), &QAction::toggled,
+//        [this]()
+//    {
+//        qDebug() << "-------------------------------- full screen ---------------------- ";
+//        m_titleBar->setVisible(false);
+//    });
+
     menu()->setTargetProvider(m_ui.data());
 
     /* Layouts. */
@@ -525,6 +537,7 @@ void MainWindow::updateWidgetsVisibility()
 
     // Always show title bar for welcome screen (it does not matter if it is fullscreen).
     m_titleBar->setVisible(isTitleVisible());
+    //m_titleBar->setVisible(false);
 
     // Fix scene activation state (Qt bug workaround).
     if (m_welcomeScreen && !m_welcomeScreenVisible)
@@ -622,6 +635,7 @@ void MainWindow::setFullScreen(bool fullScreen)
         return;
 
     QScopedValueRollback<bool> guard(m_inFullscreenTransition, true);
+
 
     if (fullScreen)
     {
@@ -751,6 +765,7 @@ void MainWindow::updateDecorationsState()
     m_ui->setTitleUsed(uiTitleUsed && !qnRuntime->isVideoWallMode() && !qnRuntime->isAcsMode());
     m_view->setLineWidth(windowTitleUsed ? 0 : 1);
     updateContentsMargins();
+
 }
 
 bool MainWindow::handleKeyPress(int key)

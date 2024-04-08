@@ -27,12 +27,15 @@ template<typename T>
 bool deserialize(CodecParameters& codecParameters, const char* data, int size)
 {
     if (size < 4 || data[0] != '[' || data[1] != 'l') //< Ubjson starts with CodecID ('l').
+    {
         return false;
-
+    }
     auto codecParams = codecParameters.getAvCodecParameters();
     T deserializedData;
     if (!deserializedData.deserialize(QByteArray((const char*)data, size)))
+    {
         return false;
+    }
 
     codecParams->codec_type = deserializedData.codecType;
     codecParams->channels = deserializedData.channels;
@@ -104,6 +107,7 @@ QByteArray CodecParameters::serializeInDeprecatedFormat42() const
 bool CodecParameters::deserialize(const char* data, int size, int version)
 {
     m_version = version;
+
     if (size > 0 && data[0] != '[') //< vms_4.2 format starts from ubjson without version
     {
         m_version = data[0];

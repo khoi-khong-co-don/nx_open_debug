@@ -3,6 +3,11 @@
 #include "server_rest_connection.h"
 
 #include <atomic>
+#include <iostream>
+#include <chrono>
+#include <sstream>
+#include <ctime>
+#include <iomanip>
 
 #include <api/helpers/chunks_request_data.h>
 #include <api/helpers/empty_request_data.h>
@@ -52,6 +57,12 @@
 #include <nx_ec/data/api_conversion_functions.h>
 #include <utils/common/delayed.h>
 #include <utils/common/ldap.h>
+
+
+
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
 using namespace nx;
 
@@ -486,6 +497,7 @@ Handle ServerConnection::getModuleInformation(
     Result<RestResultWithData<nx::vms::api::ModuleInformation>>::type callback,
     QThread* targetThread)
 {
+    qDebug() << "Handle ServerConnection::getModuleInformation";
     nx::network::rest::Params params;
     return executeGet("/api/moduleInformation", params, callback, targetThread);
 }
@@ -494,6 +506,7 @@ Handle ServerConnection::getModuleInformationAll(
     Result<RestResultWithData<QList<nx::vms::api::ModuleInformation>>>::type callback,
     QThread* targetThread)
 {
+    qDebug() << "Handle ServerConnection::getModuleInformationAll";
     nx::network::rest::Params params;
     params.insert("allModules", lit("true"));
     return executeGet("/api/moduleInformation", params, callback, targetThread);
@@ -1772,23 +1785,139 @@ Handle ServerConnection::undoReplaceDevice(
         {});
 }
 
+long long rfc3339_to_milliseconds(const std::string& rfc3339) {
+    std::tm tm = {};
+    std::istringstream ss(rfc3339);
+    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+    if (ss.fail()) {
+        throw std::invalid_argument("Invalid RFC 3339 format");
+    }
+
+    std::string micros_str = rfc3339.substr(rfc3339.find('.') + 1);
+    micros_str = micros_str.substr(0, micros_str.find('+'));
+    long microseconds = std::stol(micros_str);
+
+    std::chrono::system_clock::time_point tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+
+    tp += std::chrono::hours(0);
+
+    auto duration_since_epoch = tp.time_since_epoch();
+    long long milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration_since_epoch).count();
+
+    milliseconds += microseconds / 1000;
+
+    return milliseconds;
+}
+
+MultiServerPeriodDataList deserializeMultiServerPeriodDataList(const QByteArray& jsonData)
+{
+    MultiServerPeriodDataList result;
+    try {
+        QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
+
+
+        if (jsonDoc.isObject()) {
+            QJsonObject jsonObject = jsonDoc.object();
+
+            if (jsonObject.contains("reply") && jsonObject["reply"].isArray()) {
+                qDebug() << "deserializeMultiServerPeriodDataList Nx";
+                QJsonArray replyArray = jsonObject["reply"].toArray();
+
+                for (const auto& replyValue : replyArray) {
+                    if (replyValue.isObject()) {
+                        QJsonObject replyObject = replyValue.toObject();
+
+                        MultiServerPeriodData serverPeriodData;
+                        serverPeriodData.guid = QUuid::fromString(replyObject["guid"].toString());
+
+                        if (replyObject.contains("periods") && replyObject["periods"].isArray()) {
+                            QJsonArray periodsArray = replyObject["periods"].toArray();
+
+                            for (const auto& periodValue : periodsArray) {
+                                if (periodValue.isObject()) {
+                                    QJsonObject periodObject = periodValue.toObject();
+
+                                    QnTimePeriod periodData;
+                                    periodData.durationMs = periodObject["durationMs"].toString().toLongLong();
+                                    periodData.startTimeMs = periodObject["startTimeMs"].toString().toLongLong();
+
+                                    serverPeriodData.periods.append(periodData);
+                                }
+                            }
+                        }
+
+                        result.push_back(serverPeriodData);
+                    }
+                }
+            }
+            else if (jsonObject.contains("guid") && jsonObject.contains("periods")) {
+                qDebug() << "deserializeMultiServerPeriodDataList Oryza";
+                MultiServerPeriodData serverPeriodData;
+                serverPeriodData.guid = QUuid(jsonObject["guid"].toString());
+
+                QJsonArray periodsArray = jsonObject["periods"].toArray();
+
+                for (const auto& periodValue : periodsArray) {
+                    if (periodValue.isObject()) {
+                        QJsonObject periodObject = periodValue.toObject();
+
+                        QnTimePeriod periodData;
+                        std::string startTime = periodObject["startTimeMs"].toString().toStdString();
+                        std::string duration =  periodObject["durationMs"].toString().toStdString();
+                        long long durationResult;
+                        if (duration == "-1") durationResult = std::stoll(duration);
+                        else
+                            {
+                            float floatValue = std::stof(duration);
+                            floatValue *= 1000;
+                            durationResult = static_cast<long long>(floatValue);
+                        }
+
+                        long long startTimeMs = rfc3339_to_milliseconds(startTime);
+                        qDebug() << "StartTimeMs -> " << startTimeMs;
+                        qDebug() << "durationMs -> " << durationResult;
+                        periodData.durationMs = durationResult;
+                        periodData.startTimeMs = startTimeMs;
+
+                        serverPeriodData.periods.append(periodData);
+                    }
+                }
+
+                result.push_back(serverPeriodData);
+            }
+        }
+    }
+    catch (std::exception &e)
+    {
+        qDebug() << "Loi Parse Json " << e.what();
+    }
+
+    return result;
+}
+
+
+
 Handle ServerConnection::recordedTimePeriods(
     const QnChunksRequestData& request,
     Result<MultiServerPeriodDataList>::type&& callback,
     QThread* targetThread)
 {
+    qDebug() << "ServerConnection::recordedTimePeriods";
     QnChunksRequestData fixedFormatRequest(request);
-    fixedFormatRequest.format = Qn::CompressedPeriodsFormat;
+    fixedFormatRequest.format = Qn::JsonFormat;              //Qn::CompressedPeriodsFormat;
     auto internalCallback =
         [callback=std::move(callback)](
             bool success, Handle requestId, QByteArray result,
             const nx::network::http::HttpHeaders& /*headers*/)
         {
+            qDebug() << nx::format("Response record time: %1").arg(result);
             if (success)
             {
-                bool goodData = false;
-                auto chunks = QnCompressedTime::deserialized<MultiServerPeriodDataList>(
-                    result, {}, &goodData);
+                bool goodData = true;
+//                auto chunks = QnCompressedTime::deserialized<MultiServerPeriodDataList>(
+//                    result, {}, &goodData);
+                auto chunks = deserializeMultiServerPeriodDataList(result);
+                qDebug() << "ServerConnection::recordedTimePeriods 1";
                 callback(goodData, requestId, chunks);
                 return;
             }
@@ -1838,6 +1967,7 @@ QUrl ServerConnection::prepareUrl(const QString& path, const nx::network::rest::
     QUrl result;
     result.setPath(path);
     result.setQuery(params.toUrlQuery());
+    qDebug() << "ServerConnection::prepareUrl -> " << result;
     return result;
 }
 
@@ -1864,7 +1994,7 @@ Handle ServerConnection::executeGet(
     auto handle = request.isValid()
         ? this->executeRequest(request, std::move(callback), targetThread)
         : Handle();
-
+//    qDebug() << nx::format("Request.URL -> %1").arg(request.url);
     NX_VERBOSE(d->logTag, "<%1> %2", handle, request.url);
     return handle;
 }
@@ -2316,12 +2446,14 @@ Handle ServerConnection::executeRequest(
                 const auto statusCode = context->getStatusCode();
                 const auto osErrorCode = context->systemError;
                 const auto id = context->handle;
+                const auto reply = context->response.messageBody;
                 bool success = (osErrorCode == SystemError::noError
                     && statusCode >= nx::network::http::StatusCode::ok
                     && statusCode <= nx::network::http::StatusCode::partialContent);
 
                 NX_VERBOSE(d->logTag, "<%1> Got reply. OS error: %2, HTTP status: %3",
                     id, osErrorCode, statusCode);
+                qDebug() << nx::format("<%1> Got reply. OS error: %2, HTTP status: %3, reply: %4").args(id, osErrorCode, statusCode, reply);
 
                 auto internal_callback = [callback, success, id]()
                     {
@@ -2456,12 +2588,24 @@ void setupAuthDirect(
     QString path,
     QString query)
 {
-    request.url = nx::network::url::Builder()
-        .setScheme(nx::network::http::kSecureUrlSchemeName)
-        .setEndpoint(address)
-        .setPath(path)
-        .setQuery(query)
-        .toUrl();
+    if (address.port == 7005)           // 7005
+    {
+        request.url = nx::network::url::Builder()
+            .setScheme(nx::network::http::kUrlSchemeName)
+            .setEndpoint(address)
+            .setPath(path)
+            .setQuery(query)
+            .toUrl();
+    }
+    else
+    {
+        request.url = nx::network::url::Builder()
+            .setScheme(nx::network::http::kSecureUrlSchemeName)
+            .setEndpoint(address)
+            .setPath(path)
+            .setQuery(query)
+            .toUrl();
+    }
 
     request.credentials = std::move(credentials);
 

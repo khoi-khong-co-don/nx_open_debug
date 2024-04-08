@@ -193,6 +193,14 @@ public:
      * Converts any period list to a simple list: sorted and containing only non-overlapped periods.
      */
     QnTimePeriodList simplified() const;
+
+    void append(const QnTimePeriod &period) {
+    #ifdef QN_TIME_PERIODS_STD
+            base_type::push_back(period);
+    #else
+            base_type::append(period);
+    #endif
+        }
 };
 
 template<typename Container>

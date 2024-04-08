@@ -143,6 +143,7 @@ QnUuid NetworkModule::currentServerId() const
 
 RemoteConnectionFactory* NetworkModule::connectionFactory() const
 {
+    qDebug() << "RemoteConnectionFactory* NetworkModule::connectionFactory() const";
     return d->connectionFactory.get();
 }
 

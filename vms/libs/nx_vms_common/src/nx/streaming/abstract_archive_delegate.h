@@ -23,7 +23,13 @@
 #include <utils/camera/camera_diagnostics.h>
 
 #include "abstract_archive_integrity_watcher.h"
-
+extern "C"
+{
+    #include "libavcodec/avcodec.h"
+    #include "libavformat/avformat.h"
+    #include "libavutil/pixfmt.h"
+    #include "libswscale/swscale.h"
+}
 enum class PlaybackMode
 {
     Default,
@@ -92,6 +98,8 @@ public:
     virtual qint64 startTime() const = 0;
     virtual qint64 endTime() const = 0;
     virtual QnAbstractMediaDataPtr getNextData() = 0;
+
+     virtual void getNextDataOryza(AVPacket** packet, AVCodecContext** pCodecCtx, AVFormatContext** pFormatCtx, qint64* time, std::string rtsp, qint64 *timeStamp) = 0;
     // If findIFrame=true, jump to position before time to a nearest IFrame.
     /*!
        \ param time UTC, usec
@@ -186,6 +194,15 @@ public:
 
     virtual std::optional<QnAviArchiveMetadata> metadata() const { return std::nullopt; };
 
+    virtual bool isServerOryza() = 0;
+
+    virtual bool isOpenedRTSP() = 0;
+    virtual void pauseRtsp() = 0;
+    virtual void startRtsp(std::string rtsp) {};
+    virtual std::string getUrlStream(std::string idcam) {return "";}
+    virtual std::string getUrlRecord(std::string idcam, std::string timestamp) {return "";}
+    virtual std::string getIpServer() {return "";}
+    virtual bool readFrameFail() {return false;}
 protected:
     Flags m_flags = {};
     std::function<void()> m_endOfPlaybackHandler;

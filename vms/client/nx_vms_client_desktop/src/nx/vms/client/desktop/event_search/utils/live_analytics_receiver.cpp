@@ -40,6 +40,7 @@ public:
 private:
     virtual bool canAcceptData() const override;
     virtual void putData(const QnAbstractDataPacketPtr& data) override;
+    virtual void putData(AVPacket* data , AVCodecContext *pCodecCtx, AVFormatContext *pFormatCtx, QnAbstractStreamDataProvider* dataProvider, qint64 timestamp) override;
     virtual void clearUnprocessedData() override;
 
     void releaseArchiveReader();
@@ -64,6 +65,7 @@ void LiveAnalyticsReceiver::Private::setCamera(const QnVirtualCameraResourcePtr&
         return;
 
     m_reader.reset(new QnArchiveStreamReader(m_camera));
+    qDebug() << "Tao QnRtspClientArchiveDelegate 4";
     m_reader->setArchiveDelegate(new QnRtspClientArchiveDelegate(
         m_reader.get(),
         q->connectionCredentials(),
@@ -105,6 +107,12 @@ void LiveAnalyticsReceiver::Private::clearUnprocessedData()
     NX_MUTEX_LOCKER lock(&m_mutex);
     m_buffer.clear();
 }
+
+void LiveAnalyticsReceiver::Private::putData(AVPacket* data , AVCodecContext *pCodecCtx, AVFormatContext *pFormatCtx, QnAbstractStreamDataProvider* dataProvider, qint64 timestamp)
+{
+   qDebug() << "LiveAnalyticsReceiver::Private::putData(AVPacket* data)";
+}
+
 
 void LiveAnalyticsReceiver::Private::putData(const QnAbstractDataPacketPtr& data)
 {

@@ -79,17 +79,21 @@ bool handleTransaction2(
     const Function& function,
     FastFunctionType fastFunction)
 {
+    qDebug() << "handleTransaction2 1";
     static const int kGetKnownPeersSystemTime = 2005;
     if ((int) transaction.command == kGetKnownPeersSystemTime)
     {
         NX_VERBOSE(bus, "Ignore deprecated unused transaction %1", transaction.command);
+        qDebug() << "handleTransaction2 2";
         return true;
     }
-
+    qDebug() << nx::format("handleTransaction2 command -> %1").arg(transaction.command);
     switch (transaction.command)
     {
+        qDebug() << "handleTransaction2 3";
         TRANSACTION_DESCRIPTOR_LIST(HANDLE_TRANSACTION_PARAMS_APPLY)
     default:
+            qDebug() << "handleTransaction2 4";
         NX_ASSERT(0, "Unknown transaction command");
     }
     return false;
@@ -107,11 +111,13 @@ bool handleTransaction(
 {
     if (tranFormat == Qn::UbjsonFormat)
     {
+        qDebug() << "handleTransaction UbjsonFormat";
         QnAbstractTransaction transaction;
         QnUbjsonReader<QByteArray> stream(&serializedTransaction);
         if (!QnUbjson::deserialize(&stream, &transaction))
         {
             NX_WARNING(NX_SCOPE_TAG, "Ignore bad transaction data. size=%1.", serializedTransaction.size());
+            qDebug() << nx::format("Ignore bad transaction data. size=%1.").arg(serializedTransaction.size());
             return false;
         }
 
@@ -125,13 +131,20 @@ bool handleTransaction(
     }
     else if (tranFormat == Qn::JsonFormat)
     {
+        qDebug() << "handleTransaction JsonFormat";
         QnAbstractTransaction transaction;
         QJsonObject tranObject;
         //TODO #akolesnikov take tranObject from cache
         if (!QJson::deserialize(serializedTransaction, &tranObject))
+        {
+            qDebug() << "Loi Json";
             return false;
+        }
         if (!QJson::deserialize(tranObject["tran"], &transaction))
+        {
+            qDebug() << "Loi Json Params";
             return false;
+        }
 
         return handleTransaction2(
             bus,

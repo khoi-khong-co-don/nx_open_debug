@@ -31,6 +31,7 @@ void CheckBox::nextCheckState()
     if (checkState() == Qt::Unchecked)
     {
         emit cannotBeToggled();
+//        setCheckState(Qt::Checked);
         return;
     }
 

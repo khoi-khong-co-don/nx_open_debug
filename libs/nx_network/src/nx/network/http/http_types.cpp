@@ -768,7 +768,20 @@ void Request::removeCookie(const std::string_view& name)
 
 //-------------------------------------------------------------------------------------------------
 // class Response.
+        void Response::addHeaders()
+        {
 
+                header_temp.insert(std::make_pair("Access-Control-Allow-Origin", "*"));
+                header_temp.insert(std::make_pair("Connection", "Upgrade"));
+                header_temp.insert(std::make_pair("date", "Mon, 25 Mar 2024 05:12:06 GMT"));
+                header_temp.insert(std::make_pair("Nx-PeerData", "W1skVSNVEOq/yYU6TxkUJY5149fmZtJbJFUjVRB9keTDlmpNS705IRmAmaL1WyRVI1UQNhvUixnfQqGxkkZkMouUNGwAAAAAbAAAAAFbJFUjVRCBKMVHf/tKVIVRoBMaDwhmU1UObWV0YS5ueHZtcy5jb21MAAAAAAAAAABsAADqYGwAABPzWyRVI1UQ0OJI/DlWTbycGxylS7L4tF0="));
+                header_temp.insert(std::make_pair("Sec-WebSocket-Accept", "+5HSH2q7RgyLr5tsagKUd1LIoDI="));
+                header_temp.insert(std::make_pair("Sec-WebSocket-Extensions", "permessage-deflate"));
+                header_temp.insert(std::make_pair("Sec-WebSocket-Protocol", "nxp2p"));
+                header_temp.insert(std::make_pair("server", "Nx Meta/5.1.1.37512 (Network Optix) Apache/2.4.16 (Unix)"));
+                header_temp.insert(std::make_pair("Upgrade", "websocket"));
+                header_temp.insert(std::make_pair("X-Nx-Ping-Enabled", "true"));
+        }
 bool Response::parse(const ConstBufferRefType& data)
 {
     return parseRequestOrResponse(data, this, &Response::statusLine);

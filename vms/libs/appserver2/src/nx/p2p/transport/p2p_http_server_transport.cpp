@@ -516,6 +516,7 @@ nx::Buffer P2PHttpServerTransport::makeFrameHeader(int headers, int length) cons
 
 void P2PHttpServerTransport::bindToAioThread(network::aio::AbstractAioThread* aioThread)
 {
+    qDebug() << "P2PHttpServerTransport::bindToAioThread(network::aio::AbstractAioThread* aioThread)";
     BasicPollable::bindToAioThread(aioThread);
     m_sendSocket->bindToAioThread(aioThread);
     if (m_readSocket)

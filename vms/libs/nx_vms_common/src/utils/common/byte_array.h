@@ -21,6 +21,7 @@ public:
         size_t alignment,
         size_t capacity,
         size_t padding);
+    explicit QnByteArray(const QByteArray& byteArray);
     ~QnByteArray();
 
     QnByteArray() = default;

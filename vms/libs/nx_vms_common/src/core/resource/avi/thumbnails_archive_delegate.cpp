@@ -198,6 +198,23 @@ QnAbstractMediaDataPtr QnThumbnailsArchiveDelegate::getNextData()
     return result;
 }
 
+void QnThumbnailsArchiveDelegate::getNextDataOryza(AVPacket** packet, AVCodecContext** pCodecCtx, AVFormatContext** pFormatCtx, qint64 *time, std::string rtsp, qint64 *timeStamp)
+{
+    qDebug() << "QnThumbnailsArchiveDelegate::getNextDataOryza";
+}
+
+bool QnThumbnailsArchiveDelegate::isServerOryza()
+{
+    qDebug() << "QnThumbnailsArchiveDelegate::isServerOryza";
+    return true;
+}
+
+bool QnThumbnailsArchiveDelegate::isOpenedRTSP()
+{
+    qDebug() << "QnThumbnailsArchiveDelegate::isOpenedRTSP";
+    return true;
+}
+
 void QnThumbnailsArchiveDelegate::setGroupId(const nx::String& groupId)
 {
     m_baseDelegate->setGroupId(groupId);

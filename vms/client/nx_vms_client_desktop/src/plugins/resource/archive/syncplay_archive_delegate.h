@@ -8,6 +8,14 @@
 
 #include <nx/streaming/abstract_archive_delegate.h>
 
+extern "C"
+{
+    #include "libavcodec/avcodec.h"
+    #include "libavformat/avformat.h"
+    #include "libavutil/pixfmt.h"
+    #include "libswscale/swscale.h"
+}
+
 class QnAbstractArchiveStreamReader;
 class QnArchiveSyncPlayWrapper;
 class QnAbstractArchiveDelegate;
@@ -22,7 +30,6 @@ public:
         QnArchiveSyncPlayWrapper* syncWrapper,
         QnAbstractArchiveDelegate* ownerDelegate);
     virtual ~QnSyncPlayArchiveDelegate() override;
-
     virtual bool open(
         const QnResourcePtr &resource,
         AbstractArchiveIntegrityWatcher* archiveIntegrityWatcher) override;
@@ -32,6 +39,7 @@ public:
     virtual qint64 startTime() const override;
     virtual qint64 endTime() const override;
     virtual QnAbstractMediaDataPtr getNextData() override;
+    virtual void getNextDataOryza(AVPacket** packet, AVCodecContext** pCodecCtx, AVFormatContext** pFormatCtx, qint64* time, std::string rtsp, qint64 *timeStamp) override;
     virtual qint64 seek (qint64 time, bool findIFrame) override;
     virtual QnConstResourceVideoLayoutPtr getVideoLayout() override;
     virtual AudioLayoutConstPtr getAudioLayout() override;
@@ -55,6 +63,14 @@ public:
     virtual bool hasVideo() const override;
     virtual void pleaseStop() override;
 
+    virtual bool isServerOryza() override;
+    virtual bool isOpenedRTSP() override;
+    virtual void pauseRtsp() override;
+    virtual void startRtsp(std::string rtsp) override;
+    virtual std::string getUrlStream(std::string idcam) override;
+    virtual std::string getUrlRecord(std::string idcam, std::string timestamp) override;
+    virtual std::string getIpServer() override;
+    virtual bool readFrameFail() override;
 protected:
     friend class QnArchiveSyncPlayWrapper;
     //void setPrebuffering(bool value);

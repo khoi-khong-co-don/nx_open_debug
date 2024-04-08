@@ -46,22 +46,31 @@ CameraLicensePanelWidget::~CameraLicensePanelWidget()
 void CameraLicensePanelWidget::init(
     LicenseUsageProvider* licenseUsageProvider, CameraSettingsDialogStore* store)
 {
+
+    // Hàm này được gọi 1 lần duy nhất khi nhấn vào Camera Settings
+    // qDebug() <<  "CameraLicensePanelWidget::init";
+
     m_licenseUsageProvider = licenseUsageProvider;
     m_licenseUsageDisplay->setTextProvider(licenseUsageProvider);
     m_storeConnections = {};
 
+    // Khi checkbox bị click thì hàm này được gọi
     m_storeConnections << connect(ui->useLicenseCheckBox, &QCheckBox::clicked,
         store, &CameraSettingsDialogStore::setRecordingEnabled);
 
+    // Khi License bị khóa thì hàm này được gọi khi nhấn và thực hiện nhấp nháy
     m_storeConnections << connect(ui->useLicenseCheckBox, &CheckBox::cannotBeToggled, this,
         [this]()
         {
             BackgroundFlasher::flash(ui->licenseUsageLabel, colorTheme()->color("red_l2"));
         });
 
+    // Cập nhật lại UI
     m_storeConnections << connect(store, &CameraSettingsDialogStore::stateChanged,
         this, &CameraLicensePanelWidget::loadState);
 
+    // Dựa vào !m_licenseUsageProvider->limitExceeded() để vô hiệu hóa nút CheckBox
+    // Sau đó update lại trạng thái của nút
     m_storeConnections << connect(licenseUsageProvider, &LicenseUsageProvider::stateChanged, store,
         [this, store]()
         {
@@ -74,10 +83,11 @@ void CameraLicensePanelWidget::loadState(const CameraSettingsDialogState& state)
 {
     check_box_utils::setupTristateCheckbox(ui->useLicenseCheckBox, state.recording.enabled);
     updateLicensesButton(state);
-    ui->useLicenseCheckBox->setText(tr("Use License", "", state.devicesCount));
+    ui->useLicenseCheckBox->setText(tr("THIENNC - Use License", "", state.devicesCount));
     setReadOnly(ui->useLicenseCheckBox, state.readOnly);
 }
 
+// Được auto gọi 1 lần khi nhấn vô setting -> record ở các lần sau đó phụ thuộc vào chuỗi các điều kiện ở init
 void CameraLicensePanelWidget::updateLicensesButton(const CameraSettingsDialogState& state)
 {
     ui->moreLicensesButton->setVisible(state.globalPermissions.testFlag(GlobalPermission::admin)

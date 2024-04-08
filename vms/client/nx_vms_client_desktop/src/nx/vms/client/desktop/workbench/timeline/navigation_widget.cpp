@@ -121,7 +121,8 @@ NavigationWidget::NavigationWidget(QnWorkbenchContext* context, QWidget* parent)
 
     connect(action(ui::action::ToggleSyncAction), &QAction::toggled, this,
         [this]
-        { 
+        {
+        qDebug() << "NHAN NUT SYNC";
             updateBackwardButtonEnabled();
         },
         Qt::QueuedConnection);

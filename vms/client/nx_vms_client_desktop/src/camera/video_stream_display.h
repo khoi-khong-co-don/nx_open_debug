@@ -43,6 +43,8 @@ public:
     int addRenderer(QnResourceWidgetRenderer* draw);
     int removeRenderer(QnResourceWidgetRenderer* draw);
 
+    FrameDisplayStatus displayOryza(AVPacket* packet, AVCodecContext *pCodecCtx, int64_t timestamp);
+
     FrameDisplayStatus display(
         QnCompressedVideoDataPtr data,
         bool draw,

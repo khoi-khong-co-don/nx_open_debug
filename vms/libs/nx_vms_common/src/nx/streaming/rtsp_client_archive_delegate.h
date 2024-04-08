@@ -6,7 +6,7 @@
 
 #include <QtCore/QElapsedTimer>
 #include <QtCore/QPointer>
-
+#include <QMutex>
 #include <nx/network/http/auth_tools.h>
 #include <nx/streaming/abstract_archive_delegate.h>
 #include <nx/streaming/rtp/parsers/nx_rtp_parser.h>
@@ -16,6 +16,26 @@
 
 #include "recording/time_period.h"
 
+#include <boost/asio.hpp>
+#include <boost/beast.hpp>
+
+#include <thread>
+#include <chrono>
+
+namespace http = boost::beast::http;
+namespace beast = boost::beast;
+namespace http = beast::http;
+namespace websocket = beast::websocket;
+namespace net = boost::asio;
+using tcp = boost::asio::ip::tcp;
+
+extern "C"
+{
+    #include "libavcodec/avcodec.h"
+    #include "libavformat/avformat.h"
+    #include "libavutil/pixfmt.h"
+    #include "libswscale/swscale.h"
+}
 struct AVFormatContext;
 class QnCustomResourceVideoLayout;
 class QnArchiveStreamReader;
@@ -59,6 +79,8 @@ public:
      *     key frame.
      */
     virtual QnAbstractMediaDataPtr getNextData() override;
+
+    virtual void getNextDataOryza(AVPacket** packet, AVCodecContext** pCodecCtx, AVFormatContext** pFormatCtx, qint64* time, std::string rtsp, qint64 *timeStamp) override;
 
     /**
      * Move current position in the archive according to time and findIFrame provided.
@@ -124,6 +146,12 @@ public:
 
     void setMediaRole(PlaybackMode mode);
     virtual bool reopen() override;
+    bool isServerOryza() override {qDebug() << "QnRtspClientArchiveDelegate::isServerOryza";return m_isServerOryza;}
+    bool isOpenedRTSP() override {return m_isOpenedRTSP;}
+//    bool isPauseRTSP() override {return m_pauseRTSP;}
+    virtual void pauseRtsp() override;
+    virtual void startRtsp(std::string rtsp) override;
+
 signals:
     void dataDropped(QnArchiveStreamReader* reader);
 private:
@@ -135,13 +163,46 @@ private:
     QnMediaServerResourcePtr getServerOnTime(qint64 time);
     QnMediaServerResourcePtr getNextMediaServerFromTime(const QnSecurityCamResourcePtr &camera, qint64 time);
     QnAbstractMediaDataPtr getNextDataInternal();
+    std::string extractJson(std::string findStr, const std::string& json);
+    void callAPIRecord(std::string ipHost, std::string portHost, int64_t time);
+    void getNextDataInternalOryza(AVPacket** packet, AVCodecContext** pCodecCtx, AVFormatContext** pFormatCtx, qint64 *timestamp, qint64* time);
+    void startRecordOryza(qint64 time);
     void checkGlobalTimeAsync(const QnSecurityCamResourcePtr &camera, const QnMediaServerResourcePtr &server, qint64* result);
     void checkMinTimeFromOtherServer(const QnSecurityCamResourcePtr &camera);
     void setupRtspSession(const QnSecurityCamResourcePtr &camera, const QnMediaServerResourcePtr &server, QnRtspClient* session) const;
     void parseAudioSDP(const QStringList& audioSDP);
     void setCustomVideoLayout(const QnCustomResourceVideoLayoutPtr& value);
     bool isConnectionExpired() const;
+    virtual std::string getUrlStream(std::string idcam) override;
+    virtual std::string getUrlRecord(std::string idcam, std::string timestamp) override;
+    virtual std::string getIpServer() override;
+    virtual bool readFrameFail() override {return m_readFrameFail;}
 private:
+    std::string m_idCamera;
+    bool m_readFrameFail = false;
+    bool m_pauseRTSP = false;
+    bool m_isLive = true;
+    QMutex m_qmutex;
+    int64_t lastMicroSecond = 0;
+    bool firstFrame;
+    float frameRate;
+    bool callRecord = false;
+    bool m_isServerOryza = false;
+    int64_t m_timestamp;
+    std::string m_runRTSP = "";
+    std::string m_mainRTSP = "";
+    std::string m_subRTSP = "";
+    qint64 lastTime = 0;
+    bool m_isOpenedRTSP = false;
+    bool isOpenedRecord = true;
+    AVCodec *pCodec;
+    AVFrame *pFrame, *pFrameRGB;
+    uint8_t *out_buffer;
+    AVFormatContext *_pFormatCtx;
+    AVPacket *_packet;
+    SwsContext *imgConvertCtx;
+    AVCodecContext *_pCodecCtx;
+    int videoStream;
     nx::Mutex m_mutex;
     std::unique_ptr<QnRtspClient> m_rtspSession;
     std::unique_ptr<QnRtspIoDevice> m_rtspDevice;

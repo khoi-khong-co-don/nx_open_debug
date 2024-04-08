@@ -1299,6 +1299,7 @@ bool QnWorkbenchDisplay::addItemInternal(QnWorkbenchItem *item, bool animate, bo
             auto layout = item->layout()->resource();
             if (NX_ASSERT(layout) && !layout->localRange().isEmpty())
             {
+                qDebug() << "QnWorkbenchDisplay::addItemInternal setPlaybackRange";
                 mediaWidget->display()->archiveReader()->setPlaybackRange(
                     item->layout()->resource()->localRange());
             }
@@ -1306,6 +1307,7 @@ bool QnWorkbenchDisplay::addItemInternal(QnWorkbenchItem *item, bool animate, bo
             if (startDisplay)
             {
                 qint64 time = item->data(Qn::ItemTimeRole).toLongLong();
+                qDebug() << "QnWorkbenchDisplay::addItemInternal startDisplay";
                 if (time > 0 && time != DATETIME_NOW)
                     time *= 1000;
                 if (time > 0)
@@ -1314,14 +1316,19 @@ bool QnWorkbenchDisplay::addItemInternal(QnWorkbenchItem *item, bool animate, bo
                 }
                 else
                 {
+                    qDebug() << "QnWorkbenchDisplay::addItemInternal time = 0";
                     if (m_widgets.size() == 1 && !mediaWidget->resource()->toResource()->hasFlags(Qn::live))
+                    {
+                        qDebug() << "QnWorkbenchDisplay::addItemInternal size = 1 and not live";
                         mediaWidget->display()->archiveReader()->jumpTo(0, 0);
+                    }
                 }
             }
 
             // Zoom windows must not be controlled by radass or storage location controller.
             if (!mediaWidget->isZoomWindow())
             {
+                qDebug() << "QnWorkbenchDisplay::addItemInternal not zoom";
                 appContext()->radassController()->registerConsumer(
                     mediaWidget->display()->camDisplay());
                 context()->instance<StorageLocationCameraController>()->registerConsumer(
@@ -2202,12 +2209,16 @@ void QnWorkbenchDisplay::at_workbench_currentLayoutChanged()
         // Item reported DATETIME_NOW position in milliseconds, but it does not have live.
         // Jump to 0 (default position).
         if (timeMs && (timeMs.value() == DATETIME_NOW / 1000) && !resource->hasFlags(Qn::live))
+        {
+            qDebug() << "QnWorkbenchDisplay::at_workbench_currentLayoutChanged is not live cam";
             timeMs.reset();
+        }
 
         if (const auto archiveReader = mediaResourceWidget->display()->archiveReader())
         {
             if (!isPreviewSearchLayout)
             {
+                qDebug() << "VAO JumpTo 17";
                 if (timeMs)
                 {
                     const qint64 timeUSec = timeMs.value() == DATETIME_NOW
@@ -2218,6 +2229,7 @@ void QnWorkbenchDisplay::at_workbench_currentLayoutChanged()
                 }
                 else if (!resource->hasFlags(Qn::live))
                 {
+                    qDebug() << "QnWorkbenchDisplay::at_workbench_currentLayoutChanged is not live cam 2";
                     // Default position in SyncPlay is LIVE. If current resource is synchronized
                     // and it is not camera (does not has live) than seek to 0 (default position).
                     archiveReader->jumpTo(0, 0);

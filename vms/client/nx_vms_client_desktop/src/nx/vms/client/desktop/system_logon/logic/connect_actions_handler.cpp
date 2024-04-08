@@ -321,6 +321,7 @@ ConnectActionsHandler::ConnectActionsHandler(QObject* parent):
     connect(systemContext()->runtimeInfoManager(), &QnRuntimeInfoManager::runtimeInfoChanged, this,
         [this](const QnPeerRuntimeInfo &info)
         {
+            qDebug() << "Connect emit runtimeInfoChanged 3";
             if (info.uuid != systemContext()->peerId())
                 return;
 
@@ -511,24 +512,30 @@ void ConnectActionsHandler::handleConnectionError(RemoteConnectionError error)
 
 void ConnectActionsHandler::establishConnection(RemoteConnectionPtr connection)
 {
+    qDebug() << "ConnectActionsHandler::establishConnection(RemoteConnectionPtr connection) 1";
     if (!NX_ASSERT(connection))
         return;
 
     setState(LogicalState::connecting);
     const auto session = std::make_shared<desktop::RemoteSession>(connection, systemContext());
-
+    qDebug() << "ConnectActionsHandler::establishConnection(RemoteConnectionPtr connection) 1.1";
     session->setStickyReconnect(qnSettings->stickReconnectToServer());
+    qDebug() << "ConnectActionsHandler::establishConnection(RemoteConnectionPtr connection) 1.2";
     LogonData logonData = connection->createLogonData();
+    qDebug() << "ConnectActionsHandler::establishConnection(RemoteConnectionPtr connection) 1.3";
     const auto serverModuleInformation = connection->moduleInformation();
+    qDebug() << "ConnectActionsHandler::establishConnection(RemoteConnectionPtr connection) 1.4";
     QnUuid systemId(::helpers::getTargetSystemId(serverModuleInformation));
-
+    qDebug() << "ConnectActionsHandler::establishConnection(RemoteConnectionPtr connection) 2";
     connect(session.get(), &RemoteSession::stateChanged, this,
         [this, logonData, systemId](RemoteSession::State state)
         {
-            NX_DEBUG(this, "Remote session state changed: %1", state);
+            NX_DEBUG(this, "1Remote session state changed: %", state);
+            qDebug() << nx::format("Remote session state changed: %1").arg(state);
 
             if (state == RemoteSession::State::reconnecting)
             {
+                qDebug() << "State : RemoteSession::State::reconnecting";
                 if (d->reconnectDialog)
                     return;
 
@@ -547,6 +554,7 @@ void ConnectActionsHandler::establishConnection(RemoteConnectionPtr connection)
             }
             else if (state == RemoteSession::State::connected) //< Connection established.
             {
+                qDebug() << "State : RemoteSession::State::connected";
                 hideReconnectDialog();
                 setState(LogicalState::connected);
 
@@ -580,7 +588,7 @@ void ConnectActionsHandler::establishConnection(RemoteConnectionPtr connection)
         [this](const QnMediaServerResourcePtr& server)
         {
             NX_DEBUG(this, "Reconnecting to server: %1", server ? server->getName() : "none");
-
+            qDebug() << nx::format("Reconnecting to server: %1").arg(server ? server->getName() : "none");
             if (NX_ASSERT(d->reconnectDialog))
                 d->reconnectDialog->setCurrentServer(server);
         });
@@ -591,7 +599,7 @@ void ConnectActionsHandler::establishConnection(RemoteConnectionPtr connection)
         [this, serverModuleInformation](RemoteConnectionErrorCode errorCode)
         {
             NX_DEBUG(this, "Reconnect failed with error: %1", errorCode);
-
+            qDebug() << nx::format("Reconnect failed with error: %1").arg(errorCode);
             executeDelayedParented(
                 [this, errorCode, serverModuleInformation]()
                 {
@@ -618,9 +626,13 @@ void ConnectActionsHandler::establishConnection(RemoteConnectionPtr connection)
     qnClientCoreModule->networkModule()->setSession(session);
     appContext()->currentSystemContext()->setSession(session);
     const auto welcomeScreen = mainWindow()->welcomeScreen();
+    qDebug() << "ConnectActionsHandler::establishConnection(RemoteConnectionPtr connection) 3";
     if (welcomeScreen) // Welcome Screen exists in the desktop mode only.
+    {
+        qDebug() << "ConnectActionsHandler::establishConnection(RemoteConnectionPtr connection) 4";
         welcomeScreen->connectionToSystemEstablished(systemId);
-
+    }
+    qDebug() << "ConnectActionsHandler::establishConnection(RemoteConnectionPtr connection) 5";
     const QString userName = QString::fromStdString(connection->credentials().username);
 
     context()->setUserName(userName);
@@ -644,7 +656,7 @@ void ConnectActionsHandler::storeConnectionRecord(
      * Also, we always store connection if StorePassword flag is set because it means
      * it is not initial connection to factory system.
      */
-
+    qDebug() << "ConnectActionsHandler::storeConnectionRecord";
     const bool storePassword = options.testFlag(StorePassword);
     if (!storePassword && ::helpers::isNewSystem(info))
         return;
@@ -863,12 +875,14 @@ void ConnectActionsHandler::updatePreloaderVisibility()
 
 void ConnectActionsHandler::at_connectAction_triggered()
 {
+    qDebug() << "KHOIVH ConnectActionsHandler::at_connectAction_triggered()";
     NX_VERBOSE(this, "Connect to server triggered");
 
     const auto actionParameters = menu()->currentParameters(sender());
 
     if (!qnRuntime->isDesktopMode())
     {
+        qDebug() << "ConnectActionsHandler::at_connectAction_triggered() non desktopMode";
         connectToServerInNonDesktopMode(actionParameters.argument<LogonData>(Qn::LogonDataRole));
         return;
     }
@@ -881,6 +895,7 @@ void ConnectActionsHandler::at_connectAction_triggered()
         // Ask user if he wants to save changes.
         if (!disconnectFromServer(DisconnectFlag::NoFlags))
         {
+            qDebug() << "ConnectActionsHandler::at_connectAction_triggered() User cancelled the disconnect";
             NX_VERBOSE(this, "User cancelled the disconnect");
 
             // Login dialog sets auto-terminate if needed. If user cancelled the disconnect,
@@ -893,6 +908,7 @@ void ConnectActionsHandler::at_connectAction_triggered()
     }
     else
     {
+        qDebug() << "ConnectActionsHandler::at_connectAction_triggered() Forcefully cleaning the state";
         // Break 'Connecting' state and clear workbench.
         NX_VERBOSE(this, "Forcefully cleaning the state");
         disconnectFromServer(DisconnectFlag::Force);
@@ -902,6 +918,7 @@ void ConnectActionsHandler::at_connectAction_triggered()
     {
         const auto logonData = actionParameters.argument<LogonData>(Qn::LogonDataRole);
         NX_DEBUG(this, "Connecting to the server %1", logonData.address);
+        qDebug() << nx::format("Connecting to the server %1").arg(logonData.address);
         NX_VERBOSE(this,
             "Connection flags: storeSession %1, storePassword %2, secondary %3",
             logonData.storeSession,
@@ -926,13 +943,14 @@ void ConnectActionsHandler::at_connectAction_triggered()
 
             NX_VERBOSE(this, "Connecting to the server %1 with testing before",
                 logonData.address);
+            qDebug() << nx::format("Connecting to the server %1 with testing before").arg(logonData.address);
             connectToServer(logonData, options);
         }
     }
     else if (NX_ASSERT(actionParameters.hasArgument(Qn::RemoteConnectionRole)))
     {
         // Connect using Login dialog.
-
+        qDebug() << "Connect using Login dialog.";
         auto connection = actionParameters.argument<RemoteConnectionPtr>(
             Qn::RemoteConnectionRole);
 
@@ -1309,6 +1327,7 @@ void ConnectActionsHandler::clearConnection()
 
 void ConnectActionsHandler::connectToServer(LogonData logonData, ConnectionOptions options)
 {
+    qDebug() << "ConnectActionsHandler::connectToServer(LogonData logonData, ConnectionOptions options)";
     std::shared_ptr<QnStatisticsScenarioGuard> connectScenario = logonData.connectScenario
         ? statisticsModule()->certificates()->beginScenario(*logonData.connectScenario)
         : nullptr;
@@ -1320,19 +1339,22 @@ void ConnectActionsHandler::connectToServer(LogonData logonData, ConnectionOptio
         [this, options, connectScenario, originalUsername]
             (RemoteConnectionFactory::ConnectionOrError result)
         {
+        qDebug() << "Ket qua ket noi server";
             if (const auto error = std::get_if<RemoteConnectionError>(&result))
             {
+                qDebug() << "Kết nối thất bại !!!!";
                 handleConnectionError(*error);
                 disconnectFromServer(DisconnectFlag::Force);
             }
             else
             {
+                qDebug() << "Kết nối thành công !!!!";
                 auto connection = std::get<RemoteConnectionPtr>(result);
                 switchCloudHostIfNeeded(
                     d->currentConnectionProcess->context->moduleInformation.cloudHost);
 
                 establishConnection(connection);
-
+                ////  KHOI THEM LUU PASSWORD//////////////////////
                 ConnectionInfo storedConnectionInfo = connection->connectionInfo();
                 storedConnectionInfo.credentials.username = originalUsername;
 
@@ -1340,6 +1362,7 @@ void ConnectActionsHandler::connectToServer(LogonData logonData, ConnectionOptio
                     storedConnectionInfo,
                     connection->moduleInformation(),
                     options);
+                //////////////////////////////////
             }
         });
 
